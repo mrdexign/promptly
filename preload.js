@@ -22,6 +22,11 @@ const CONFIG = {
 		submit: ['button[aria-label*="Send"]', 'button[aria-label*="Submit"]', 'button[class*="send"]'],
 		method: 'react-props',
 	},
+	'arena.ai': {
+		input: ['textarea[name="message"]', 'textarea[placeholder*="Ask"]', 'textarea'],
+		submit: ['button[type="submit"]', 'button[aria-label*="Send"]', 'button[class*="send"]', 'button:has(svg)'],
+		method: 'react-props',
+	},
 };
 
 // --- Helpers ---

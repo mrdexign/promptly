@@ -16,8 +16,9 @@ const ASSETS = {
 
 const URLS = {
 	Copilot: 'https://copilot.microsoft.com',
-	Perplexity: 'https://perplexity.ai',
+	Arena: 'https://arena.ai/text/direct',
 	Gemini: 'https://gemini.google.com',
+	Perplexity: 'https://perplexity.ai',
 	Monica: 'https://monica.im/home',
 };
 
