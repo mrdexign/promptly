@@ -3,7 +3,7 @@ const path = require('path');
 const util = require('util');
 const { exec } = require('child_process');
 const AutoLaunch = require('auto-launch');
-const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, clipboard, shell, dialog } = require('electron');
+const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, clipboard, shell, dialog, ipcMain } = require('electron');
 const execAsync = util.promisify(exec);
 
 // --- Configuration & Constants ---
@@ -28,6 +28,7 @@ if (!app.isPackaged) autoLauncher.disable();
 
 // --- State Management ---
 let win = null;
+let settingsWin = null;
 let tray = null;
 let isAnimating = false;
 
@@ -42,16 +43,150 @@ const updateState = {
 	error: null,
 };
 
-// Load/Save preference helper
-const getStoredAssistant = () => {
+// --- Settings Management ---
+const getDefaultPrompts = () => [
+	{ id: 'toggle', name: 'Toggle Window', shortcut: 'Alt+C', text: '', autoSubmit: false, isSystem: true },
+	{ id: 'rephrase', name: 'Rephrase', shortcut: 'Alt+R', text: 'Rephrase', autoSubmit: true },
+	{ id: 'clipboard', name: 'Clipboard (Paste only)', shortcut: 'Alt+M', text: 'Clipboard', autoSubmit: false },
+	{ id: 'task', name: 'Task Title Extractor', shortcut: 'Alt+T', text: 'Extract the task title in one line', autoSubmit: true },
+	{ id: 'grammar', name: 'Grammar Checker', shortcut: 'Alt+G', text: 'Spot grammar mistakes and share the lesson', autoSubmit: true },
+	{ id: 'translate', name: 'Translator', shortcut: 'Alt+L', text: 'Translate to Persian and identify critical vocab', autoSubmit: true }
+];
+
+const loadSettings = () => {
 	try {
-		const stored = JSON.parse(fs.readFileSync(ASSETS.config, 'utf8')).currentAssistant;
-		return (stored && URLS[stored]) ? stored : 'Copilot';
-	} catch {
-		return 'Copilot';
+		if (fs.existsSync(ASSETS.config)) {
+			const data = JSON.parse(fs.readFileSync(ASSETS.config, 'utf8'));
+			if (data && typeof data === 'object') {
+				if (!data.prompts) {
+					data.prompts = getDefaultPrompts();
+				}
+				return data;
+			}
+		}
+	} catch (err) {
+		console.error('Failed to load settings:', err);
 	}
+
+	const defaults = {
+		currentAssistant: 'Copilot',
+		autoLaunch: false,
+		prompts: getDefaultPrompts(),
+	};
+	try {
+		fs.writeFileSync(ASSETS.config, JSON.stringify(defaults, null, 2));
+	} catch (err) {
+		console.error('Failed to write default settings:', err);
+	}
+	return defaults;
 };
-let currentAssistant = getStoredAssistant();
+
+let appSettings = loadSettings();
+let currentAssistant = appSettings.currentAssistant;
+
+const registerShortcuts = () => {
+	globalShortcut.unregisterAll();
+	
+	appSettings.prompts.forEach(item => {
+		if (!item.shortcut) return;
+		
+		try {
+			const success = globalShortcut.register(item.shortcut, () => {
+				if (item.id === 'toggle') {
+					toggleWindow();
+				} else {
+					askAI(item.text, item.autoSubmit);
+				}
+			});
+			if (!success) {
+				console.error(`Failed to register shortcut: ${item.shortcut} for ${item.name}`);
+			}
+		} catch (err) {
+			console.error(`Error registering shortcut: ${item.shortcut}`, err);
+		}
+	});
+};
+
+const createSettingsWindow = () => {
+	if (settingsWin) {
+		settingsWin.focus();
+		return;
+	}
+
+	settingsWin = new BrowserWindow({
+		title: 'Promptly Settings',
+		width: 900,
+		height: 550,
+		frame: false,
+		transparent: true,
+		resizable: false,
+		icon: ASSETS.icon,
+		webPreferences: {
+			nodeIntegration: false,
+			contextIsolation: true,
+			preload: path.join(__dirname, 'preload-settings.js'),
+		},
+	});
+
+	settingsWin.loadFile(path.join(__dirname, 'settings.html'));
+
+	settingsWin.on('closed', () => {
+		settingsWin = null;
+	});
+};
+
+// --- IPC Communication for Settings ---
+ipcMain.handle('get-settings', async () => {
+	try {
+		const enabled = await autoLauncher.isEnabled();
+		appSettings.autoLaunch = enabled;
+	} catch (err) {
+		console.error('Failed to get auto launcher state:', err);
+	}
+	return appSettings;
+});
+
+ipcMain.handle('save-settings', async (_, newSettings) => {
+	appSettings = newSettings;
+
+	try {
+		const currentlyEnabled = await autoLauncher.isEnabled();
+		if (newSettings.autoLaunch && !currentlyEnabled) {
+			await autoLauncher.enable();
+		} else if (!newSettings.autoLaunch && currentlyEnabled) {
+			await autoLauncher.disable();
+		}
+	} catch (err) {
+		console.error('Auto-launch sync failed:', err);
+	}
+
+	try {
+		fs.writeFileSync(ASSETS.config, JSON.stringify(appSettings, null, 2));
+	} catch (err) {
+		console.error('Failed to write settings:', err);
+	}
+
+	if (win && currentAssistant !== newSettings.currentAssistant) {
+		currentAssistant = newSettings.currentAssistant;
+		win.loadURL(URLS[currentAssistant] || URLS.Copilot);
+	}
+	currentAssistant = newSettings.currentAssistant;
+
+	registerShortcuts();
+	await createTray();
+
+	if (settingsWin) {
+		settingsWin.close();
+	}
+
+	return { success: true };
+});
+
+ipcMain.on('close-settings', () => {
+	if (settingsWin) {
+		settingsWin.close();
+	}
+});
 
 // --- Window Management ---
 const createWindow = () => {
@@ -346,7 +481,8 @@ const createTray = async () => {
 				checked: currentAssistant === name,
 				click: () => {
 					currentAssistant = name;
-					fs.writeFileSync(ASSETS.config, JSON.stringify({ currentAssistant: name }));
+					appSettings.currentAssistant = name;
+					fs.writeFileSync(ASSETS.config, JSON.stringify(appSettings, null, 2));
 					win.loadURL(URLS[name]);
 					tray.setToolTip(`Promptly v${app.getVersion()} (${name})`);
 					createTray(); // Refresh menu label
@@ -358,11 +494,21 @@ const createTray = async () => {
 			click: async () => {
 				if (isAutoLaunchEnabled) {
 					await autoLauncher.disable();
+					appSettings.autoLaunch = false;
 				} else {
 					await autoLauncher.enable();
+					appSettings.autoLaunch = true;
 				}
+				fs.writeFileSync(ASSETS.config, JSON.stringify(appSettings, null, 2));
 				createTray(); // Refresh menu label
 			},
+		},
+		{ type: 'separator' },
+		{
+			label: 'Settings...',
+			click: () => {
+				createSettingsWindow();
+			}
 		},
 		{ type: 'separator' },
 
@@ -443,19 +589,18 @@ app.whenReady().then(async () => {
 	checkForUpdates(); // Initial update check
 	setInterval(checkForUpdates, 6 * 60 * 60 * 1000); // Check every 6 hours
 
-	// Register Shortcuts
-	const shortcuts = {
-		'Alt+C': () => toggleWindow(),
-		'Alt+R': () => askAI('Rephrase'),
-		'Alt+M': () => askAI('Clipboard', false),
-		'Alt+T': () => askAI('Extract the task title in one line'),
-		'Alt+G': () => askAI('Spot grammar mistakes and share the lesson'),
-		'Alt+L': () => askAI('Translate to Persian and identify critical vocab'),
-	};
-
-	for (const [key, action] of Object.entries(shortcuts)) {
-		globalShortcut.register(key, action);
+	// Sync auto-launch setting with actual system status
+	try {
+		const enabled = await autoLauncher.isEnabled();
+		if (appSettings.autoLaunch !== enabled) {
+			if (appSettings.autoLaunch) await autoLauncher.enable();
+			else await autoLauncher.disable();
+		}
+	} catch (err) {
+		console.error('Failed to sync auto-launch on startup:', err);
 	}
+
+	registerShortcuts();
 });
 
 app.on('will-quit', () => globalShortcut.unregisterAll());

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Promptly Settings</title>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="settings.css">
+</head>
+<body>
+	<div class="window-container">
+		<!-- Drag Header -->
+		<header class="window-header">
+			<div class="header-title">
+				<img src="icons/icon.ico" class="header-icon" alt="icon" onerror="this.style.display='none'">
+				<span>Promptly Settings</span>
+			</div>
+			<button id="closeBtn" class="no-drag close-btn" title="Close">&times;</button>
+		</header>
+
+		<div class="window-body">
+			<!-- Sidebar -->
+			<aside class="sidebar">
+				<button class="tab-btn active" data-tab="general">
+					<span class="tab-icon">⚙️</span>
+					<span>General</span>
+				</button>
+				<button class="tab-btn" data-tab="prompts">
+					<span class="tab-icon">📝</span>
+					<span>Prompts</span>
+				</button>
+			</aside>
+
+			<!-- Content Area -->
+			<main class="content-container">
+				<!-- General Tab Content -->
+				<section id="generalTab" class="tab-content active">
+					<h2>General Settings</h2>
+					<p class="section-desc">Manage startup behavior and default assistant configurations.</p>
+					
+					<div class="settings-group">
+						<div class="setting-item">
+							<div class="setting-info">
+								<label for="defaultAssistant">Default AI Assistant</label>
+								<span>Choose which AI service opens when you activate Promptly.</span>
+							</div>
+							<div class="setting-control">
+								<select id="defaultAssistant" class="form-select">
+									<option value="Copilot">Copilot</option>
+									<option value="Arena">Arena</option>
+									<option value="Gemini">Gemini</option>
+									<option value="Perplexity">Perplexity</option>
+									<option value="Monica">Monica</option>
+									<option value="Qwen">Qwen</option>
+								</select>
+							</div>
+						</div>
+
+						<div class="setting-item">
+							<div class="setting-info">
+								<label for="autoLaunch">Auto-Launch on Startup</label>
+								<span>Run Promptly automatically when your system boots up.</span>
+							</div>
+							<div class="setting-control">
+								<label class="switch">
+									<input type="checkbox" id="autoLaunch">
+									<span class="slider"></span>
+								</label>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Prompts Tab Content -->
+				<section id="promptsTab" class="tab-content">
+					<div class="prompts-header">
+						<div>
+							<h2>Shortcuts & Prompts</h2>
+							<p class="section-desc">Map global shortcuts to send custom prompts to the active AI assistant.</p>
+						</div>
+						<button id="addPromptBtn" class="btn btn-secondary">+ Add Prompt</button>
+					</div>
+
+					<div class="prompts-container">
+						<div class="prompts-list-header">
+							<div class="col-name">Name</div>
+							<div class="col-shortcut">Shortcut</div>
+							<div class="col-prompt">System Prompt Prefix</div>
+							<div class="col-submit" title="Send message automatically after pasting">Auto-Submit</div>
+							<div class="col-actions"></div>
+						</div>
+						
+						<div id="promptsList" class="prompts-list">
+							<!-- Populated dynamically via settings.js -->
+						</div>
+					</div>
+				</section>
+			</main>
+		</div>
+
+		<!-- Footer -->
+		<footer class="window-footer">
+			<button id="cancelBtn" class="btn btn-text">Cancel</button>
+			<button id="saveBtn" class="btn btn-primary">Save Settings</button>
+		</footer>
+	</div>
+
+	<script src="settings.js"></script>
+</body>
+</html>
