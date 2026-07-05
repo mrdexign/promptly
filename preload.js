@@ -27,6 +27,11 @@ const CONFIG = {
 		submit: ['button[type="submit"]', 'button[aria-label*="Send"]', 'button[class*="send"]', 'button:has(svg)'],
 		method: 'react-props',
 	},
+	'qwen.ai': {
+		input: ['textarea.message-input-textarea', '.message-input-textarea', 'textarea'],
+		submit: ['.message-input-right-button button', '.message-input-right-button > *', '.message-input-right-button'],
+		method: 'react-props',
+	},
 };
 
 // --- Helpers ---

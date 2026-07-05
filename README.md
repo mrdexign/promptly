@@ -18,4 +18,4 @@ This application utilizes global shortcuts to enhance your workflow. These short
 | `Alt + R` | **Rephrase Text**              | Copies the currently selected text and asks Promptly to provide **Regular**, **Formal**, and **Detailed** versions.   |
 | `Alt + G` | **Check Grammar**              | Copies the selected text and asks Promptly to identify any **grammar mistakes** and explain the underlying rules.     |
 | `Alt + L` | **Translate to Persian**       | Copies the selected text, asks Promptly to **translate it to Persian**, and identify critical vocabulary for learning.|
-| `Alt + M` | **Quick Paste from Clipboard** | Paste the last text from the clipboard into Promptly                                                                  |
+| `Alt + T` | **Extract Task Title**       | Copies the selected text and asks Promptly to **extract a concise task title** in one line.                          |

@@ -20,6 +20,7 @@ const URLS = {
 	Gemini: 'https://gemini.google.com',
 	Perplexity: 'https://perplexity.ai',
 	Monica: 'https://monica.im/home',
+	Qwen: 'https://chat.qwen.ai',
 };
 
 const autoLauncher = new AutoLaunch({ name: 'Promptly', path: app.getPath('exe') });
@@ -33,7 +34,8 @@ let isAnimating = false;
 // Load/Save preference helper
 const getStoredAssistant = () => {
 	try {
-		return JSON.parse(fs.readFileSync(ASSETS.config, 'utf8')).currentAssistant || 'Copilot';
+		const stored = JSON.parse(fs.readFileSync(ASSETS.config, 'utf8')).currentAssistant;
+		return (stored && URLS[stored]) ? stored : 'Copilot';
 	} catch {
 		return 'Copilot';
 	}
@@ -61,7 +63,7 @@ const createWindow = () => {
 		},
 	});
 
-	win.loadURL(URLS[currentAssistant]);
+	win.loadURL(URLS[currentAssistant] || URLS.Copilot);
 
 	// Handle Copilot's specific lazy-loading issues
 	win.webContents.on('did-finish-load', () => {
@@ -240,6 +242,7 @@ app.whenReady().then(async () => {
 		'Alt+C': () => toggleWindow(),
 		'Alt+R': () => askAI('Rephrase'),
 		'Alt+M': () => askAI('Clipboard', false),
+		'Alt+T': () => askAI('Extract the task title in one line'),
 		'Alt+G': () => askAI('Spot grammar mistakes and share the lesson'),
 		'Alt+L': () => askAI('Translate to Persian and identify critical vocab'),
 	};
