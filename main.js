@@ -3,7 +3,7 @@ const path = require('path');
 const util = require('util');
 const { exec } = require('child_process');
 const AutoLaunch = require('auto-launch');
-const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, clipboard, shell } = require('electron');
+const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, clipboard, shell, dialog } = require('electron');
 const execAsync = util.promisify(exec);
 
 // --- Configuration & Constants ---
@@ -30,6 +30,17 @@ if (!app.isPackaged) autoLauncher.disable();
 let win = null;
 let tray = null;
 let isAnimating = false;
+
+// --- Update State ---
+const updateState = {
+	checked: false,
+	available: false,
+	version: null,
+	downloadUrl: null,
+	status: 'idle', // 'idle' | 'downloading' | 'error'
+	progress: 0,
+	error: null,
+};
 
 // Load/Save preference helper
 const getStoredAssistant = () => {
@@ -126,6 +137,165 @@ const toggleWindow = show => {
 	}, 15);
 };
 
+// --- Auto-Updater Logic ---
+// --- Auto-Updater Logic ---
+const isNewerVersion = (current, latest) => {
+	const curParts = current.replace(/^v/, '').split('.').map(Number);
+	const latParts = latest.replace(/^v/, '').split('.').map(Number);
+	for (let i = 0; i < Math.max(curParts.length, latParts.length); i++) {
+		const cur = curParts[i] || 0;
+		const lat = latParts[i] || 0;
+		if (lat > cur) return true;
+		if (cur > lat) return false;
+	}
+	return false;
+};
+
+const checkForUpdates = async (isManual = false) => {
+	try {
+		const response = await fetch('https://api.github.com/repos/mrdexign/promptly/releases/latest', {
+			headers: { 'User-Agent': 'Promptly-Updater' }
+		});
+		if (!response.ok) {
+			if (isManual) {
+				dialog.showMessageBox({
+					type: 'warning',
+					buttons: ['OK'],
+					title: 'Promptly Update',
+					message: 'Could not fetch update information.',
+					detail: 'Please check your internet connection and try again.'
+				});
+			}
+			return;
+		}
+		const data = await response.json();
+		const latestVersion = data.tag_name;
+
+		if (latestVersion && isNewerVersion(app.getVersion(), latestVersion)) {
+			const exeAsset = data.assets.find(asset => asset.name.endsWith('.exe'));
+			if (exeAsset) {
+				updateState.available = true;
+				updateState.version = latestVersion;
+				updateState.downloadUrl = exeAsset.browser_download_url;
+				await createTray();
+
+				// Prompt user to update
+				dialog.showMessageBox({
+					type: 'question',
+					buttons: ['Update Now', 'Later'],
+					defaultId: 0,
+					title: 'Promptly Update',
+					message: `A new version (v${latestVersion}) is available!`,
+					detail: 'Would you like to download and install it now?',
+					cancelId: 1
+				}).then(res => {
+					if (res.response === 0) {
+						startUpdate();
+					}
+				});
+				return;
+			}
+		}
+
+		updateState.checked = true;
+		if (isManual) {
+			dialog.showMessageBox({
+				type: 'info',
+				buttons: ['OK'],
+				title: 'Promptly Update',
+				message: 'Promptly is up to date!',
+				detail: `You are currently running the latest version (v${app.getVersion()}).`
+			});
+		}
+	} catch (err) {
+		console.error('Update check failed:', err);
+		if (isManual) {
+			dialog.showMessageBox({
+				type: 'error',
+				buttons: ['OK'],
+				title: 'Promptly Update Error',
+				message: 'Failed to check for updates.',
+				detail: err.message
+			});
+		}
+	}
+};
+
+const startUpdate = async () => {
+	if (updateState.status === 'downloading') return;
+
+	updateState.status = 'downloading';
+	updateState.progress = 0;
+	await createTray();
+
+	try {
+		const { Readable } = require('stream');
+		const response = await fetch(updateState.downloadUrl);
+		if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+		const totalBytes = parseInt(response.headers.get('content-length'), 10) || 0;
+		const tempFilePath = path.join(app.getPath('temp'), `Promptly-Setup-${updateState.version}.exe`);
+		const fileStream = fs.createWriteStream(tempFilePath);
+		const bodyStream = Readable.fromWeb(response.body);
+
+		let downloadedBytes = 0;
+		let lastUpdatePercent = 0;
+
+		bodyStream.on('data', chunk => {
+			downloadedBytes += chunk.length;
+			if (totalBytes > 0) {
+				const percent = Math.round((downloadedBytes / totalBytes) * 100);
+				if (percent !== lastUpdatePercent) {
+					lastUpdatePercent = percent;
+					updateState.progress = percent;
+					createTray();
+				}
+			}
+		});
+
+		bodyStream.pipe(fileStream);
+
+		await new Promise((resolve, reject) => {
+			fileStream.on('finish', resolve);
+			fileStream.on('error', reject);
+			bodyStream.on('error', reject);
+		});
+
+		// Notify user of completion using a native modal dialog
+		dialog.showMessageBox({
+			type: 'info',
+			buttons: ['OK'],
+			title: 'Promptly Update',
+			message: 'Download complete!',
+			detail: 'Promptly will now restart to complete the installation.'
+		}).then(() => {
+			// Execute Squirrel installer
+			const { spawn } = require('child_process');
+			const child = spawn(tempFilePath, [], {
+				detached: true,
+				stdio: 'ignore'
+			});
+			child.unref();
+
+			// Graceful quit
+			app.isQuitting = true;
+			app.quit();
+		});
+	} catch (err) {
+		console.error('Update download failed:', err);
+		updateState.status = 'error';
+		updateState.error = err.message;
+		dialog.showMessageBox({
+			type: 'error',
+			buttons: ['OK'],
+			title: 'Promptly Update Error',
+			message: 'Failed to download update.',
+			detail: err.message
+		});
+		await createTray();
+	}
+};
+
 // --- System Tray ---
 const createTray = async () => {
 	if (!tray) {
@@ -133,8 +303,40 @@ const createTray = async () => {
 		tray.on('click', () => toggleWindow());
 	}
 	const isAutoLaunchEnabled = await autoLauncher.isEnabled();
-	const contextMenu = Menu.buildFromTemplate([
+
+	const menuTemplate = [
 		{ label: `⚡ Promptly v${app.getVersion()}`, click: () => toggleWindow() },
+	];
+
+	if (updateState.available) {
+		menuTemplate.push({ type: 'separator' });
+		if (updateState.status === 'idle') {
+			menuTemplate.push({
+				label: `✨ Update to v${updateState.version} (One-click)`,
+				click: () => startUpdate()
+			});
+		} else if (updateState.status === 'downloading') {
+			menuTemplate.push({
+				label: `📥 Downloading update: ${updateState.progress}%`,
+				enabled: false
+			});
+		} else if (updateState.status === 'error') {
+			menuTemplate.push({
+				label: `❌ Update failed. Click to retry.`,
+				click: () => startUpdate()
+			});
+		}
+	} else {
+		menuTemplate.push(
+			{ type: 'separator' },
+			{
+				label: 'Check for Updates...',
+				click: () => checkForUpdates(true)
+			}
+		);
+	}
+
+	menuTemplate.push(
 		{ type: 'separator' },
 		{
 			label: `Assistant: ${currentAssistant}`,
@@ -178,7 +380,9 @@ const createTray = async () => {
 				app.quit();
 			},
 		},
-	]);
+	);
+
+	const contextMenu = Menu.buildFromTemplate(menuTemplate);
 	tray.setToolTip(`Promptly v${app.getVersion()} (${currentAssistant})`);
 	tray.removeAllListeners('click');
 	tray.on('click', () => {
@@ -236,6 +440,8 @@ const askAI = async (promptPrefix, autoSubmit = true) => {
 app.whenReady().then(async () => {
 	createWindow();
 	await createTray();
+	checkForUpdates(); // Initial update check
+	setInterval(checkForUpdates, 6 * 60 * 60 * 1000); // Check every 6 hours
 
 	// Register Shortcuts
 	const shortcuts = {
