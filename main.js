@@ -3,7 +3,7 @@ const path = require('path');
 const util = require('util');
 const { exec } = require('child_process');
 const AutoLaunch = require('auto-launch');
-const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, clipboard, shell, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, globalShortcut, screen, Tray, Menu, clipboard, shell, dialog, ipcMain, nativeTheme } = require('electron');
 const execAsync = util.promisify(exec);
 
 // --- Configuration & Constants ---
@@ -61,6 +61,8 @@ const loadSettings = () => {
 				if (!data.prompts) {
 					data.prompts = getDefaultPrompts();
 				}
+				if (data.standardWindow === undefined) data.standardWindow = false;
+				if (data.theme === undefined) data.theme = 'system';
 				return data;
 			}
 		}
@@ -72,6 +74,8 @@ const loadSettings = () => {
 		currentAssistant: 'Copilot',
 		autoLaunch: false,
 		prompts: getDefaultPrompts(),
+		standardWindow: false,
+		theme: 'system',
 	};
 	try {
 		fs.writeFileSync(ASSETS.config, JSON.stringify(defaults, null, 2));
@@ -82,6 +86,7 @@ const loadSettings = () => {
 };
 
 let appSettings = loadSettings();
+nativeTheme.themeSource = appSettings.theme || 'system';
 let currentAssistant = appSettings.currentAssistant;
 
 const registerShortcuts = () => {
@@ -116,7 +121,7 @@ const createSettingsWindow = () => {
 	settingsWin = new BrowserWindow({
 		title: 'Promptly Settings',
 		width: 900,
-		height: 550,
+		height: 680,
 		frame: false,
 		transparent: true,
 		resizable: false,
@@ -147,7 +152,10 @@ ipcMain.handle('get-settings', async () => {
 });
 
 ipcMain.handle('save-settings', async (_, newSettings) => {
+	const prevStandardWindow = appSettings.standardWindow;
+
 	appSettings = newSettings;
+	nativeTheme.themeSource = newSettings.theme || 'system';
 
 	try {
 		const currentlyEnabled = await autoLauncher.isEnabled();
@@ -175,6 +183,12 @@ ipcMain.handle('save-settings', async (_, newSettings) => {
 	registerShortcuts();
 	await createTray();
 
+	if (win && prevStandardWindow !== newSettings.standardWindow) {
+		win.destroy();
+		win = null;
+		createWindow();
+	}
+
 	if (settingsWin) {
 		settingsWin.close();
 	}
@@ -188,19 +202,70 @@ ipcMain.on('close-settings', () => {
 	}
 });
 
-// --- Window Management ---
+ipcMain.handle('get-app-version', () => app.getVersion());
+ipcMain.handle('get-default-prompts', () => getDefaultPrompts());
+
+ipcMain.handle('check-update-status', async () => {
+	try {
+		const response = await fetch('https://api.github.com/repos/mrdexign/promptly/releases/latest', {
+			headers: { 'User-Agent': 'Promptly-Updater' }
+		});
+		if (!response.ok) {
+			return { success: false, error: 'Could not fetch update information.' };
+		}
+		const data = await response.json();
+		const latestVersion = data.tag_name.replace(/^v/, '');
+		const currentVersion = app.getVersion();
+
+		if (latestVersion && isNewerVersion(currentVersion, latestVersion)) {
+			const exeAsset = data.assets.find(asset => asset.name.endsWith('.exe'));
+			if (exeAsset) {
+				updateState.available = true;
+				updateState.version = latestVersion;
+				updateState.downloadUrl = exeAsset.browser_download_url;
+				return {
+					success: true,
+					updateAvailable: true,
+					latestVersion,
+					currentVersion,
+					downloadUrl: exeAsset.browser_download_url
+				};
+			}
+		}
+
+		return {
+			success: true,
+			updateAvailable: false,
+			currentVersion
+		};
+	} catch (err) {
+		console.error('Update check failed:', err);
+		return { success: false, error: err.message };
+	}
+});
+
+ipcMain.on('start-update', () => {
+	startUpdate();
+});
+
+ipcMain.on('open-about-page', () => {
+	shell.openExternal('https://github.com/mrdexign/promptly');
+});
+
 const createWindow = () => {
 	if (win) return;
 	const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+	const standardWindow = !!appSettings.standardWindow;
 
 	win = new BrowserWindow({
 		title: 'Promptly',
-		width,
-		height,
+		width: standardWindow ? 1024 : width,
+		height: standardWindow ? 768 : height,
 		show: false,
-		frame: false,
-		transparent: true,
-		skipTaskbar: true,
+		frame: standardWindow,
+		transparent: !standardWindow,
+		resizable: standardWindow,
+		skipTaskbar: !standardWindow,
 		icon: ASSETS.icon,
 		webPreferences: {
 			nodeIntegration: false,
@@ -304,7 +369,7 @@ const checkForUpdates = async (isManual = false) => {
 			return;
 		}
 		const data = await response.json();
-		const latestVersion = data.tag_name;
+		const latestVersion = data.tag_name.replace(/^v/, '');
 
 		if (latestVersion && isNewerVersion(app.getVersion(), latestVersion)) {
 			const exeAsset = data.assets.find(asset => asset.name.endsWith('.exe'));
@@ -312,7 +377,6 @@ const checkForUpdates = async (isManual = false) => {
 				updateState.available = true;
 				updateState.version = latestVersion;
 				updateState.downloadUrl = exeAsset.browser_download_url;
-				await createTray();
 
 				// Prompt user to update
 				dialog.showMessageBox({
@@ -361,9 +425,89 @@ const startUpdate = async () => {
 
 	updateState.status = 'downloading';
 	updateState.progress = 0;
-	await createTray();
 
+	const html = `
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<style>
+			body {
+				margin: 0;
+				padding: 20px;
+				background: #12131C;
+				color: #E2E8F0;
+				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+				text-align: center;
+				border: 1px solid rgba(255, 255, 255, 0.08);
+				border-radius: 12px;
+				overflow: hidden;
+				-webkit-app-region: drag;
+			}
+			.title {
+				font-size: 13px;
+				font-weight: 600;
+				margin-bottom: 12px;
+				letter-spacing: 0.5px;
+			}
+			.progress-bar-bg {
+				width: 100%;
+				height: 6px;
+				background: rgba(255, 255, 255, 0.08);
+				border-radius: 3px;
+				overflow: hidden;
+				margin-bottom: 8px;
+				-webkit-app-region: no-drag;
+			}
+			.progress-bar {
+				width: 0%;
+				height: 100%;
+				background: linear-gradient(90deg, #6366F1, #8B5CF6);
+				border-radius: 3px;
+				transition: width 0.1s ease;
+			}
+			.status {
+				font-size: 11px;
+				color: #94A3B8;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="title">Downloading Promptly Update...</div>
+		<div class="progress-bar-bg">
+			<div id="progress" class="progress-bar"></div>
+		</div>
+		<div id="status" class="status">0% completed</div>
+		<script>
+			const { ipcRenderer } = require('electron');
+			ipcRenderer.on('update-progress', (event, percent) => {
+				document.getElementById('progress').style.width = percent + '%';
+				document.getElementById('status').innerText = percent + '% completed';
+			});
+		</script>
+	</body>
+	</html>
+	`;
+
+	let updateWin = null;
 	try {
+		// Create frameless progress window
+		updateWin = new BrowserWindow({
+			width: 320,
+			height: 110,
+			frame: false,
+			resizable: false,
+			transparent: true,
+			alwaysOnTop: true,
+			skipTaskbar: true,
+			icon: ASSETS.icon,
+			webPreferences: {
+				nodeIntegration: true,
+				contextIsolation: false
+			}
+		});
+
+		updateWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+
 		const { Readable } = require('stream');
 		const response = await fetch(updateState.downloadUrl);
 		if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -383,7 +527,9 @@ const startUpdate = async () => {
 				if (percent !== lastUpdatePercent) {
 					lastUpdatePercent = percent;
 					updateState.progress = percent;
-					createTray();
+					if (updateWin && !updateWin.isDestroyed()) {
+						updateWin.webContents.send('update-progress', percent);
+					}
 				}
 			}
 		});
@@ -395,6 +541,11 @@ const startUpdate = async () => {
 			fileStream.on('error', reject);
 			bodyStream.on('error', reject);
 		});
+
+		// Close progress window
+		if (updateWin && !updateWin.isDestroyed()) {
+			updateWin.close();
+		}
 
 		// Notify user of completion using a native modal dialog
 		dialog.showMessageBox({
@@ -420,6 +571,11 @@ const startUpdate = async () => {
 		console.error('Update download failed:', err);
 		updateState.status = 'error';
 		updateState.error = err.message;
+		
+		if (updateWin && !updateWin.isDestroyed()) {
+			updateWin.close();
+		}
+
 		dialog.showMessageBox({
 			type: 'error',
 			buttons: ['OK'],
@@ -427,7 +583,6 @@ const startUpdate = async () => {
 			message: 'Failed to download update.',
 			detail: err.message
 		});
-		await createTray();
 	}
 };
 
@@ -435,41 +590,11 @@ const startUpdate = async () => {
 const createTray = async () => {
 	if (!tray) {
 		tray = new Tray(ASSETS.icon);
-		tray.on('click', () => toggleWindow());
 	}
-	const isAutoLaunchEnabled = await autoLauncher.isEnabled();
 
 	const menuTemplate = [
 		{ label: `⚡ Promptly v${app.getVersion()}`, click: () => toggleWindow() },
 	];
-
-	if (updateState.available) {
-		menuTemplate.push({ type: 'separator' });
-		if (updateState.status === 'idle') {
-			menuTemplate.push({
-				label: `✨ Update to v${updateState.version} (One-click)`,
-				click: () => startUpdate()
-			});
-		} else if (updateState.status === 'downloading') {
-			menuTemplate.push({
-				label: `📥 Downloading update: ${updateState.progress}%`,
-				enabled: false
-			});
-		} else if (updateState.status === 'error') {
-			menuTemplate.push({
-				label: `❌ Update failed. Click to retry.`,
-				click: () => startUpdate()
-			});
-		}
-	} else {
-		menuTemplate.push(
-			{ type: 'separator' },
-			{
-				label: 'Check for Updates...',
-				click: () => checkForUpdates(true)
-			}
-		);
-	}
 
 	menuTemplate.push(
 		{ type: 'separator' },
@@ -489,34 +614,12 @@ const createTray = async () => {
 				},
 			})),
 		},
-		{
-			label: `Auto-launch: ${isAutoLaunchEnabled ? 'ON' : 'OFF'}`,
-			click: async () => {
-				if (isAutoLaunchEnabled) {
-					await autoLauncher.disable();
-					appSettings.autoLaunch = false;
-				} else {
-					await autoLauncher.enable();
-					appSettings.autoLaunch = true;
-				}
-				fs.writeFileSync(ASSETS.config, JSON.stringify(appSettings, null, 2));
-				createTray(); // Refresh menu label
-			},
-		},
 		{ type: 'separator' },
 		{
-			label: 'Settings...',
+			label: 'Settings',
 			click: () => {
 				createSettingsWindow();
 			}
-		},
-		{ type: 'separator' },
-
-		{
-			label: 'About Us',
-			click: () => {
-				shell.openExternal('https://github.com/mrdexign/promptly');
-			},
 		},
 		{ type: 'separator' },
 		{
@@ -530,8 +633,17 @@ const createTray = async () => {
 
 	const contextMenu = Menu.buildFromTemplate(menuTemplate);
 	tray.setToolTip(`Promptly v${app.getVersion()} (${currentAssistant})`);
+
 	tray.removeAllListeners('click');
+	tray.removeAllListeners('right-click');
+
+	// Left click opens Settings
 	tray.on('click', () => {
+		createSettingsWindow();
+	});
+
+	// Right click opens Tray Menu
+	tray.on('right-click', () => {
 		tray.popUpContextMenu(contextMenu);
 	});
 };

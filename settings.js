@@ -1,11 +1,15 @@
 document.addEventListener('DOMContentLoaded', async () => {
+	lucide.createIcons();
 	const generalTab = document.getElementById('generalTab');
 	const promptsTab = document.getElementById('promptsTab');
 	const promptsList = document.getElementById('promptsList');
 	const defaultAssistantSelect = document.getElementById('defaultAssistant');
 	const autoLaunchCheckbox = document.getElementById('autoLaunch');
+	const standardWindowCheckbox = document.getElementById('standardWindow');
+	const themeSelect = document.getElementById('themeSelect');
 	
 	const addPromptBtn = document.getElementById('addPromptBtn');
+	const resetDefaultsBtn = document.getElementById('resetDefaultsBtn');
 	const saveBtn = document.getElementById('saveBtn');
 	const cancelBtn = document.getElementById('cancelBtn');
 	const closeBtn = document.getElementById('closeBtn');
@@ -13,6 +17,96 @@ document.addEventListener('DOMContentLoaded', async () => {
 	let activePrompts = [];
 	let recordingBtn = null;
 	let originalShortcut = '';
+
+	// --- Custom Confirmation Modal Helper ---
+	const confirmModal = document.getElementById('confirmModal');
+	const confirmTitle = document.getElementById('confirmTitle');
+	const confirmMessage = document.getElementById('confirmMessage');
+	const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+	const confirmApproveBtn = document.getElementById('confirmApproveBtn');
+	const confirmCloseBtn = document.getElementById('confirmCloseBtn');
+
+	function showConfirm(title, message, options = {}) {
+		return new Promise((resolve) => {
+			confirmTitle.textContent = title;
+			confirmMessage.textContent = message;
+			
+			// Dynamic Button Configuration
+			confirmApproveBtn.textContent = options.confirmText || 'Confirm';
+			confirmCancelBtn.textContent = options.cancelText || 'Cancel';
+			
+			if (options.showCancel === false) {
+				confirmCancelBtn.style.display = 'none';
+			} else {
+				confirmCancelBtn.style.display = 'inline-flex';
+			}
+			
+			if (options.isDestructive) {
+				confirmApproveBtn.className = 'btn btn-danger';
+			} else {
+				confirmApproveBtn.className = 'btn btn-primary';
+			}
+
+			confirmModal.classList.add('active');
+
+			const cleanUp = (value) => {
+				confirmModal.classList.remove('active');
+				confirmApproveBtn.removeEventListener('click', onApprove);
+				confirmCancelBtn.removeEventListener('click', onCancel);
+				confirmCloseBtn.removeEventListener('click', onCancel);
+				confirmModal.removeEventListener('click', onOverlayClick);
+				resolve(value);
+			};
+
+			function onApprove(e) {
+				e.preventDefault();
+				cleanUp(true);
+			}
+
+			function onCancel(e) {
+				e.preventDefault();
+				cleanUp(false);
+			}
+
+			function onOverlayClick(e) {
+				if (e.target === confirmModal) {
+					cleanUp(false);
+				}
+			}
+
+			confirmApproveBtn.addEventListener('click', onApprove);
+			confirmCancelBtn.addEventListener('click', onCancel);
+			confirmCloseBtn.addEventListener('click', onCancel);
+			confirmModal.addEventListener('click', onOverlayClick);
+		});
+	}
+
+	// --- Theme Support ---
+	const systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+	
+	function applyTheme(theme) {
+		document.body.classList.remove('theme-light', 'theme-dark');
+		if (theme === 'light') {
+			document.body.classList.add('theme-light');
+		} else if (theme === 'dark') {
+			document.body.classList.add('theme-dark');
+		} else {
+			const systemIsDark = systemMediaQuery.matches;
+			document.body.classList.add(systemIsDark ? 'theme-dark' : 'theme-light');
+		}
+	}
+
+	systemMediaQuery.addEventListener('change', () => {
+		if (themeSelect && themeSelect.value === 'system') {
+			applyTheme('system');
+		}
+	});
+
+	if (themeSelect) {
+		themeSelect.addEventListener('change', () => {
+			applyTheme(themeSelect.value);
+		});
+	}
 
 	// --- Tab Switching ---
 	document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -32,6 +126,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 		const settings = await window.api.getSettings();
 		defaultAssistantSelect.value = settings.currentAssistant || 'Copilot';
 		autoLaunchCheckbox.checked = !!settings.autoLaunch;
+		standardWindowCheckbox.checked = !!settings.standardWindow;
+		themeSelect.value = settings.theme || 'system';
+		applyTheme(themeSelect.value);
 		activePrompts = settings.prompts || [];
 		
 		renderPromptsList();
@@ -115,9 +212,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 			deleteBtn.innerHTML = '&times;';
 			deleteBtn.title = 'Delete prompt';
 			deleteBtn.disabled = !!prompt.isSystem;
-			deleteBtn.addEventListener('click', () => {
-				activePrompts.splice(index, 1);
-				renderPromptsList();
+			deleteBtn.addEventListener('click', async () => {
+				const confirmed = await showConfirm(
+					'Delete Prompt',
+					`Are you sure you want to delete the prompt "${prompt.name || 'Untitled'}"?`,
+					{ isDestructive: true, confirmText: 'Delete' }
+				);
+				if (confirmed) {
+					activePrompts.splice(index, 1);
+					renderPromptsList();
+				}
 			});
 
 			actionsCell.appendChild(deleteBtn);
@@ -150,7 +254,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 			promptsList.scrollTop = promptsList.scrollHeight;
 		}, 50);
 	});
-
+	// --- Reset to Default Prompts ---
+	resetDefaultsBtn.addEventListener('click', async (e) => {
+		e.preventDefault();
+		const confirmed = await showConfirm(
+			'Reset Defaults',
+			'Are you sure you want to reset all shortcuts and prompts to their default values? This will overwrite your current settings.',
+			{ isDestructive: true, confirmText: 'Reset' }
+		);
+		if (confirmed) {
+			try {
+				activePrompts = await window.api.getDefaultPrompts();
+				renderPromptsList();
+			} catch (err) {
+				console.error('Failed to reset default prompts:', err);
+			}
+		}
+	});
 	// --- Shortcut Recording Logic ---
 	function startRecording(btn, promptObj) {
 		if (recordingBtn) {
@@ -237,6 +357,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 		const newSettings = {
 			currentAssistant: defaultAssistantSelect.value,
 			autoLaunch: autoLaunchCheckbox.checked,
+			standardWindow: standardWindowCheckbox.checked,
+			theme: themeSelect.value,
 			prompts: finalPrompts
 		};
 
@@ -254,4 +376,72 @@ document.addEventListener('DOMContentLoaded', async () => {
 	closeBtn.addEventListener('click', () => {
 		window.api.closeSettings();
 	});
+
+	// --- Version and Update Check ---
+	const updateVersionInfo = document.getElementById('updateVersionInfo');
+	const checkUpdateBtn = document.getElementById('checkUpdateBtn');
+	const sidebarVersion = document.getElementById('sidebarVersion');
+	const aboutLink = document.getElementById('aboutLink');
+
+	try {
+		const version = await window.api.getAppVersion();
+		updateVersionInfo.textContent = `Current version is v${version}`;
+		if (sidebarVersion) {
+			sidebarVersion.textContent = `v${version}`;
+		}
+	} catch (err) {
+		console.error('Failed to get app version:', err);
+		updateVersionInfo.textContent = 'Error loading version';
+	}
+
+	checkUpdateBtn.addEventListener('click', async (e) => {
+		e.preventDefault();
+		
+		const originalText = checkUpdateBtn.textContent;
+		checkUpdateBtn.disabled = true;
+		checkUpdateBtn.textContent = 'Checking...';
+		
+		try {
+			const result = await window.api.checkUpdateStatus();
+			if (result.success === false) {
+				await showConfirm(
+					'Update Check Failed',
+					`Could not fetch update information: ${result.error || 'Unknown error'}`,
+					{ confirmText: 'OK', showCancel: false }
+				);
+			} else if (result.updateAvailable) {
+				const confirmed = await showConfirm(
+					'Update Available',
+					`A new version (v${result.latestVersion}) is available! (Current: v${result.currentVersion}).\nWould you like to download and install it now?`,
+					{ confirmText: 'Update Now', cancelText: 'Later' }
+				);
+				if (confirmed) {
+					window.api.startUpdate();
+				}
+			} else {
+				await showConfirm(
+					'Promptly Update',
+					`Promptly is up to date! You are running the latest version (v${result.currentVersion}).`,
+					{ confirmText: 'OK', showCancel: false }
+				);
+			}
+		} catch (err) {
+			console.error('Failed to check updates:', err);
+			await showConfirm(
+				'Update Check Failed',
+				`Could not check for updates: ${err.message}`,
+				{ confirmText: 'OK', showCancel: false }
+			);
+		} finally {
+			checkUpdateBtn.disabled = false;
+			checkUpdateBtn.textContent = originalText;
+		}
+	});
+
+	if (aboutLink) {
+		aboutLink.addEventListener('click', (e) => {
+			e.preventDefault();
+			window.api.openAboutPage();
+		});
+	}
 });

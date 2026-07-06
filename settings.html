@@ -1,110 +1,174 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Promptly Settings</title>
-	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-	<link rel="stylesheet" href="settings.css">
-</head>
-<body>
-	<div class="window-container">
-		<!-- Drag Header -->
-		<header class="window-header">
-			<div class="header-title">
-				<img src="icons/icon.ico" class="header-icon" alt="icon" onerror="this.style.display='none'">
-				<span>Promptly Settings</span>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Promptly Settings</title>
+		<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+		<link rel="stylesheet" href="settings.css" />
+	</head>
+	<body>
+		<div class="window-container">
+			<!-- Drag Header -->
+			<header class="window-header">
+				<div class="header-title">
+					<img src="icons/icon.ico" class="header-icon" alt="icon" onerror="this.style.display = 'none'" />
+					<span>Promptly Settings</span>
+				</div>
+				<button id="closeBtn" class="no-drag close-btn" title="Close">&times;</button>
+			</header>
+
+			<div class="window-body">
+				<!-- Sidebar -->
+				<aside class="sidebar">
+					<div class="sidebar-tabs">
+						<button class="tab-btn active" data-tab="general">
+							<i data-lucide="settings" class="tab-icon"></i>
+							<span>General</span>
+						</button>
+						<button class="tab-btn" data-tab="prompts">
+							<i data-lucide="terminal" class="tab-icon"></i>
+							<span>Prompts</span>
+						</button>
+					</div>
+					<div class="sidebar-footer">
+						<a href="#" id="aboutLink" class="about-link no-drag" title="About Us"> Promptly </a>
+						<div id="sidebarVersion" class="sidebar-version">Loading...</div>
+					</div>
+				</aside>
+
+				<!-- Content Area -->
+				<main class="content-container">
+					<!-- General Tab Content -->
+					<section id="generalTab" class="tab-content active">
+						<h2>General Settings</h2>
+						<p class="section-desc">Manage startup behavior and default assistant configurations.</p>
+
+						<div class="settings-group">
+							<div class="setting-item">
+								<div class="setting-info">
+									<label for="defaultAssistant">Default AI Assistant</label>
+									<span>Choose which AI service opens when you activate Promptly.</span>
+								</div>
+								<div class="setting-control">
+									<select id="defaultAssistant" class="form-select">
+										<option value="Copilot">Copilot</option>
+										<option value="Arena">Arena</option>
+										<option value="Gemini">Gemini</option>
+										<option value="Perplexity">Perplexity</option>
+										<option value="Monica">Monica</option>
+										<option value="Qwen">Qwen</option>
+									</select>
+								</div>
+							</div>
+
+							<div class="setting-item">
+								<div class="setting-info">
+									<label for="themeSelect">Theme Mode</label>
+									<span>Set the appearance mode for Promptly.</span>
+								</div>
+								<div class="setting-control">
+									<select id="themeSelect" class="form-select">
+										<option value="system">System</option>
+										<option value="dark">Dark Mode</option>
+										<option value="light">Light Mode</option>
+									</select>
+								</div>
+							</div>
+
+							<div class="setting-item">
+								<div class="setting-info">
+									<label for="autoLaunch">Auto-Launch on Startup</label>
+									<span>Run Promptly automatically when your system boots up.</span>
+								</div>
+								<div class="setting-control">
+									<label class="switch">
+										<input type="checkbox" id="autoLaunch" />
+										<span class="slider"></span>
+									</label>
+								</div>
+							</div>
+
+							<div class="setting-item">
+								<div class="setting-info">
+									<label for="standardWindow">Standard Window Mode</label>
+									<span>Show window controls (close, minimize, maximize) and allow resizing.</span>
+								</div>
+								<div class="setting-control">
+									<label class="switch">
+										<input type="checkbox" id="standardWindow" />
+										<span class="slider"></span>
+									</label>
+								</div>
+							</div>
+
+							<div class="setting-item">
+								<div class="setting-info">
+									<label>Check for Updates</label>
+									<span id="updateVersionInfo">Loading version...</span>
+								</div>
+								<div class="setting-control">
+									<button id="checkUpdateBtn" class="btn btn-secondary no-drag">Check for Updates</button>
+								</div>
+							</div>
+						</div>
+					</section>
+
+					<!-- Prompts Tab Content -->
+					<section id="promptsTab" class="tab-content">
+						<div class="prompts-header">
+							<div>
+								<h2>Shortcuts & Prompts</h2>
+								<p class="section-desc">Map global shortcuts to send custom prompts to the active AI assistant.</p>
+							</div>
+							<div class="header-actions">
+								<button id="resetDefaultsBtn" class="btn btn-secondary no-drag">Reset Defaults</button>
+								<button id="addPromptBtn" class="btn btn-secondary no-drag">+ Add Prompt</button>
+							</div>
+						</div>
+
+						<div class="prompts-container">
+							<div class="prompts-list-header">
+								<div class="col-name">Name</div>
+								<div class="col-shortcut">Shortcut</div>
+								<div class="col-prompt">Prompt Prefix</div>
+								<div class="col-submit" title="Send message automatically after pasting">Auto-Submit</div>
+								<div class="col-actions"></div>
+							</div>
+
+							<div id="promptsList" class="prompts-list">
+								<!-- Populated dynamically via settings.js -->
+							</div>
+						</div>
+					</section>
+				</main>
 			</div>
-			<button id="closeBtn" class="no-drag close-btn" title="Close">&times;</button>
-		</header>
 
-		<div class="window-body">
-			<!-- Sidebar -->
-			<aside class="sidebar">
-				<button class="tab-btn active" data-tab="general">
-					<span class="tab-icon">⚙️</span>
-					<span>General</span>
-				</button>
-				<button class="tab-btn" data-tab="prompts">
-					<span class="tab-icon">📝</span>
-					<span>Prompts</span>
-				</button>
-			</aside>
-
-			<!-- Content Area -->
-			<main class="content-container">
-				<!-- General Tab Content -->
-				<section id="generalTab" class="tab-content active">
-					<h2>General Settings</h2>
-					<p class="section-desc">Manage startup behavior and default assistant configurations.</p>
-					
-					<div class="settings-group">
-						<div class="setting-item">
-							<div class="setting-info">
-								<label for="defaultAssistant">Default AI Assistant</label>
-								<span>Choose which AI service opens when you activate Promptly.</span>
-							</div>
-							<div class="setting-control">
-								<select id="defaultAssistant" class="form-select">
-									<option value="Copilot">Copilot</option>
-									<option value="Arena">Arena</option>
-									<option value="Gemini">Gemini</option>
-									<option value="Perplexity">Perplexity</option>
-									<option value="Monica">Monica</option>
-									<option value="Qwen">Qwen</option>
-								</select>
-							</div>
-						</div>
-
-						<div class="setting-item">
-							<div class="setting-info">
-								<label for="autoLaunch">Auto-Launch on Startup</label>
-								<span>Run Promptly automatically when your system boots up.</span>
-							</div>
-							<div class="setting-control">
-								<label class="switch">
-									<input type="checkbox" id="autoLaunch">
-									<span class="slider"></span>
-								</label>
-							</div>
-						</div>
-					</div>
-				</section>
-
-				<!-- Prompts Tab Content -->
-				<section id="promptsTab" class="tab-content">
-					<div class="prompts-header">
-						<div>
-							<h2>Shortcuts & Prompts</h2>
-							<p class="section-desc">Map global shortcuts to send custom prompts to the active AI assistant.</p>
-						</div>
-						<button id="addPromptBtn" class="btn btn-secondary">+ Add Prompt</button>
-					</div>
-
-					<div class="prompts-container">
-						<div class="prompts-list-header">
-							<div class="col-name">Name</div>
-							<div class="col-shortcut">Shortcut</div>
-							<div class="col-prompt">System Prompt Prefix</div>
-							<div class="col-submit" title="Send message automatically after pasting">Auto-Submit</div>
-							<div class="col-actions"></div>
-						</div>
-						
-						<div id="promptsList" class="prompts-list">
-							<!-- Populated dynamically via settings.js -->
-						</div>
-					</div>
-				</section>
-			</main>
+			<!-- Footer -->
+			<footer class="window-footer">
+				<button id="cancelBtn" class="btn btn-text">Cancel</button>
+				<button id="saveBtn" class="btn btn-primary">Save Settings</button>
+			</footer>
 		</div>
 
-		<!-- Footer -->
-		<footer class="window-footer">
-			<button id="cancelBtn" class="btn btn-text">Cancel</button>
-			<button id="saveBtn" class="btn btn-primary">Save Settings</button>
-		</footer>
-	</div>
+		<!-- Custom Confirmation Modal -->
+		<div id="confirmModal" class="modal-overlay">
+			<div class="modal-card">
+				<div class="modal-header">
+					<h3 id="confirmTitle">Confirm Action</h3>
+					<button id="confirmCloseBtn" class="modal-close-x">&times;</button>
+				</div>
+				<div class="modal-body">
+					<p id="confirmMessage">Are you sure you want to perform this action?</p>
+				</div>
+				<div class="modal-footer">
+					<button id="confirmCancelBtn" class="btn btn-secondary">Cancel</button>
+					<button id="confirmApproveBtn" class="btn btn-danger">Confirm</button>
+				</div>
+			</div>
+		</div>
 
-	<script src="settings.js"></script>
-</body>
+		<script src="https://unpkg.com/lucide@latest"></script>
+		<script src="settings.js"></script>
+	</body>
 </html>
