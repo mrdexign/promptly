@@ -62,7 +62,7 @@ const loadSettings = () => {
 					data.prompts = getDefaultPrompts();
 				}
 				if (data.standardWindow === undefined) data.standardWindow = false;
-				if (data.theme === undefined) data.theme = 'system';
+				if (data.theme === undefined) data.theme = 'dark';
 				return data;
 			}
 		}
@@ -75,7 +75,7 @@ const loadSettings = () => {
 		autoLaunch: false,
 		prompts: getDefaultPrompts(),
 		standardWindow: false,
-		theme: 'system',
+		theme: 'dark',
 	};
 	try {
 		fs.writeFileSync(ASSETS.config, JSON.stringify(defaults, null, 2));
@@ -86,7 +86,7 @@ const loadSettings = () => {
 };
 
 let appSettings = loadSettings();
-nativeTheme.themeSource = appSettings.theme || 'system';
+nativeTheme.themeSource = appSettings.theme || 'dark';
 let currentAssistant = appSettings.currentAssistant;
 
 const registerShortcuts = () => {
@@ -112,6 +112,20 @@ const registerShortcuts = () => {
 	});
 };
 
+const registerContextMenu = (browserWindow) => {
+	if (!browserWindow) return;
+	browserWindow.webContents.on('context-menu', (e, params) => {
+		const menu = Menu.buildFromTemplate([
+			{ role: 'cut', label: 'Cut', enabled: params.editFlags ? params.editFlags.canCut : false },
+			{ role: 'copy', label: 'Copy', enabled: params.editFlags ? params.editFlags.canCopy : false },
+			{ role: 'paste', label: 'Paste', enabled: params.editFlags ? params.editFlags.canPaste : false },
+			{ type: 'separator' },
+			{ role: 'selectAll', label: 'Select All', enabled: params.editFlags ? params.editFlags.canSelectAll : false }
+		]);
+		menu.popup({ window: browserWindow, x: params.x, y: params.y });
+	});
+};
+
 const createSettingsWindow = () => {
 	if (settingsWin) {
 		settingsWin.focus();
@@ -119,7 +133,7 @@ const createSettingsWindow = () => {
 	}
 
 	settingsWin = new BrowserWindow({
-		title: 'Promptly Settings',
+		title: 'Promptly',
 		width: 900,
 		height: 680,
 		frame: false,
@@ -132,6 +146,8 @@ const createSettingsWindow = () => {
 			preload: path.join(__dirname, 'preload-settings.js'),
 		},
 	});
+
+	registerContextMenu(settingsWin);
 
 	settingsWin.loadFile(path.join(__dirname, 'settings.html'));
 
@@ -155,7 +171,7 @@ ipcMain.handle('save-settings', async (_, newSettings) => {
 	const prevStandardWindow = appSettings.standardWindow;
 
 	appSettings = newSettings;
-	nativeTheme.themeSource = newSettings.theme || 'system';
+	nativeTheme.themeSource = newSettings.theme || 'dark';
 
 	try {
 		const currentlyEnabled = await autoLauncher.isEnabled();
@@ -187,10 +203,6 @@ ipcMain.handle('save-settings', async (_, newSettings) => {
 		win.destroy();
 		win = null;
 		createWindow();
-	}
-
-	if (settingsWin) {
-		settingsWin.close();
 	}
 
 	return { success: true };
@@ -273,6 +285,11 @@ const createWindow = () => {
 			preload: path.join(__dirname, 'preload.js'),
 		},
 	});
+
+	if (standardWindow) {
+		win.setMenu(null);
+	}
+	registerContextMenu(win);
 
 	win.loadURL(URLS[currentAssistant] || URLS.Copilot);
 
@@ -694,6 +711,47 @@ const askAI = async (promptPrefix, autoSubmit = true) => {
 	}
 };
 
+// --- Auto-Reload in Development ---
+const setupAutoReload = () => {
+	try {
+		const watchDir = __dirname;
+		let watchTimeout = null;
+		
+		fs.watch(watchDir, { recursive: true }, (eventType, filename) => {
+			if (filename) {
+				const normalizedFile = filename.replace(/\\/g, '/');
+				
+				if (
+					normalizedFile.includes('node_modules') ||
+					normalizedFile.includes('.git') ||
+					normalizedFile.includes('out') ||
+					normalizedFile.includes('assistant-config.json') ||
+					normalizedFile.endsWith('.tmp')
+				) {
+					return;
+				}
+				
+				if (watchTimeout) clearTimeout(watchTimeout);
+				watchTimeout = setTimeout(() => {
+					console.log(`Auto Reload: ${normalizedFile} changed`);
+					if (normalizedFile === 'main.js') {
+						app.relaunch();
+						app.exit(0);
+					} else {
+						BrowserWindow.getAllWindows().forEach(w => {
+							if (!w.isDestroyed()) {
+								w.webContents.reloadIgnoringCache();
+							}
+						});
+					}
+				}, 100);
+			}
+		});
+	} catch (err) {
+		console.error('Failed to setup auto-reload:', err);
+	}
+};
+
 // --- App Lifecycle ---
 app.whenReady().then(async () => {
 	createWindow();
@@ -713,6 +771,10 @@ app.whenReady().then(async () => {
 	}
 
 	registerShortcuts();
+
+	if (!app.isPackaged) {
+		setupAutoReload();
+	}
 });
 
 app.on('will-quit', () => globalShortcut.unregisterAll());

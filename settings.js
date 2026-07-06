@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const defaultAssistantSelect = document.getElementById('defaultAssistant');
 	const autoLaunchCheckbox = document.getElementById('autoLaunch');
 	const standardWindowCheckbox = document.getElementById('standardWindow');
-	const themeSelect = document.getElementById('themeSelect');
+	const themeToggle = document.getElementById('themeToggle');
 	
 	const addPromptBtn = document.getElementById('addPromptBtn');
 	const resetDefaultsBtn = document.getElementById('resetDefaultsBtn');
@@ -17,6 +17,57 @@ document.addEventListener('DOMContentLoaded', async () => {
 	let activePrompts = [];
 	let recordingBtn = null;
 	let originalShortcut = '';
+	let initialSettingsJSON = '';
+	let defaultPromptsJSON = '';
+
+	const getSettingsObject = () => {
+		const finalPrompts = activePrompts.filter(p => {
+			if (p.isSystem) return true;
+			return p.name.trim() !== '' && p.shortcut.trim() !== '';
+		});
+
+		return {
+			currentAssistant: defaultAssistantSelect.value,
+			autoLaunch: autoLaunchCheckbox.checked,
+			standardWindow: standardWindowCheckbox.checked,
+			theme: themeToggle.checked ? 'dark' : 'light',
+			prompts: finalPrompts.map(p => ({
+				id: p.id,
+				name: p.name,
+				shortcut: p.shortcut,
+				text: p.text,
+				autoSubmit: !!p.autoSubmit,
+				isSystem: !!p.isSystem
+			}))
+		};
+	};
+
+	const updateResetDefaultsButtonVisibility = () => {
+		const currentPrompts = activePrompts.filter(p => {
+			if (p.isSystem) return true;
+			return p.name.trim() !== '' && p.shortcut.trim() !== '';
+		});
+		const currentPromptsJSON = JSON.stringify(currentPrompts.map(p => ({
+			id: p.id,
+			name: p.name,
+			shortcut: p.shortcut,
+			text: p.text,
+			autoSubmit: !!p.autoSubmit,
+			isSystem: !!p.isSystem
+		})));
+
+		if (currentPromptsJSON === defaultPromptsJSON) {
+			resetDefaultsBtn.style.display = 'none';
+		} else {
+			resetDefaultsBtn.style.display = 'inline-flex';
+		}
+	};
+
+	const updateSaveButtonState = () => {
+		const currentSettingsJSON = JSON.stringify(getSettingsObject());
+		saveBtn.disabled = (currentSettingsJSON === initialSettingsJSON);
+		updateResetDefaultsButtonVisibility();
+	};
 
 	// --- Custom Confirmation Modal Helper ---
 	const confirmModal = document.getElementById('confirmModal');
@@ -82,29 +133,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}
 
 	// --- Theme Support ---
-	const systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-	
 	function applyTheme(theme) {
 		document.body.classList.remove('theme-light', 'theme-dark');
 		if (theme === 'light') {
 			document.body.classList.add('theme-light');
-		} else if (theme === 'dark') {
-			document.body.classList.add('theme-dark');
 		} else {
-			const systemIsDark = systemMediaQuery.matches;
-			document.body.classList.add(systemIsDark ? 'theme-dark' : 'theme-light');
+			document.body.classList.add('theme-dark');
 		}
 	}
 
-	systemMediaQuery.addEventListener('change', () => {
-		if (themeSelect && themeSelect.value === 'system') {
-			applyTheme('system');
-		}
-	});
-
-	if (themeSelect) {
-		themeSelect.addEventListener('change', () => {
-			applyTheme(themeSelect.value);
+	if (themeToggle) {
+		themeToggle.addEventListener('change', () => {
+			applyTheme(themeToggle.checked ? 'dark' : 'light');
 		});
 	}
 
@@ -127,11 +167,73 @@ document.addEventListener('DOMContentLoaded', async () => {
 		defaultAssistantSelect.value = settings.currentAssistant || 'Copilot';
 		autoLaunchCheckbox.checked = !!settings.autoLaunch;
 		standardWindowCheckbox.checked = !!settings.standardWindow;
-		themeSelect.value = settings.theme || 'system';
-		applyTheme(themeSelect.value);
+		themeToggle.checked = settings.theme !== 'light';
+		applyTheme(themeToggle.checked ? 'dark' : 'light');
 		activePrompts = settings.prompts || [];
 		
+		const defaults = await window.api.getDefaultPrompts();
+		defaultPromptsJSON = JSON.stringify(defaults.map(p => ({
+			id: p.id,
+			name: p.name,
+			shortcut: p.shortcut,
+			text: p.text,
+			autoSubmit: !!p.autoSubmit,
+			isSystem: !!p.isSystem
+		})));
+
 		renderPromptsList();
+
+		defaultAssistantSelect.addEventListener('change', () => {
+			syncCustomSelect();
+			updateSaveButtonState();
+		});
+		autoLaunchCheckbox.addEventListener('change', updateSaveButtonState);
+		standardWindowCheckbox.addEventListener('change', updateSaveButtonState);
+		themeToggle.addEventListener('change', updateSaveButtonState);
+
+		// Setup custom dropdown logic
+		const customSelectWrapper = document.querySelector('.custom-select-wrapper');
+		const customSelectTrigger = document.querySelector('.custom-select-trigger');
+		
+		function syncCustomSelect() {
+			const val = defaultAssistantSelect.value;
+			const labelSpan = document.getElementById('customSelectLabel');
+			if (labelSpan) labelSpan.textContent = val;
+			
+			document.querySelectorAll('.custom-select-option').forEach(opt => {
+				if (opt.dataset.value === val) {
+					opt.classList.add('selected');
+				} else {
+					opt.classList.remove('selected');
+				}
+			});
+		}
+
+		if (customSelectTrigger && customSelectWrapper) {
+			customSelectTrigger.addEventListener('click', (e) => {
+				e.stopPropagation();
+				customSelectWrapper.classList.toggle('active');
+			});
+
+			document.querySelectorAll('.custom-select-option').forEach(opt => {
+				opt.addEventListener('click', (e) => {
+					e.stopPropagation();
+					const val = opt.dataset.value;
+					defaultAssistantSelect.value = val;
+					defaultAssistantSelect.dispatchEvent(new Event('change'));
+					customSelectWrapper.classList.remove('active');
+				});
+			});
+
+			document.addEventListener('click', () => {
+				customSelectWrapper.classList.remove('active');
+			});
+		}
+
+		syncCustomSelect();
+
+		initialSettingsJSON = JSON.stringify(getSettingsObject());
+		updateSaveButtonState();
 	} catch (err) {
 		console.error('Failed to load settings:', err);
 	}
@@ -151,8 +253,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 			nameInput.value = prompt.name || '';
 			nameInput.disabled = !!prompt.isSystem;
 			nameInput.placeholder = 'Action Name';
-			nameInput.addEventListener('change', (e) => {
+			nameInput.addEventListener('input', (e) => {
 				prompt.name = e.target.value;
+				updateSaveButtonState();
 			});
 
 			// Shortcut button (recorder)
@@ -173,8 +276,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 			textInput.value = prompt.text || '';
 			textInput.disabled = !!prompt.isSystem;
 			textInput.placeholder = prompt.isSystem ? 'System Toggle' : 'e.g. Translate to Spanish';
-			textInput.addEventListener('change', (e) => {
+			textInput.addEventListener('input', (e) => {
 				prompt.text = e.target.value;
+				updateSaveButtonState();
 			});
 
 			// Auto-Submit toggle
@@ -189,6 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 				checkbox.checked = !!prompt.autoSubmit;
 				checkbox.addEventListener('change', (e) => {
 					prompt.autoSubmit = e.target.checked;
+					updateSaveButtonState();
 				});
 				
 				const slider = document.createElement('span');
@@ -221,6 +326,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 				if (confirmed) {
 					activePrompts.splice(index, 1);
 					renderPromptsList();
+					updateSaveButtonState();
 				}
 			});
 
@@ -248,6 +354,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			isSystem: false
 		});
 		renderPromptsList();
+		updateSaveButtonState();
 		
 		// Scroll to bottom of list
 		setTimeout(() => {
@@ -266,6 +373,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			try {
 				activePrompts = await window.api.getDefaultPrompts();
 				renderPromptsList();
+				updateSaveButtonState();
 			} catch (err) {
 				console.error('Failed to reset default prompts:', err);
 			}
@@ -322,6 +430,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 				btn.dataset.shortcut = finalShortcut;
 				promptObj.shortcut = finalShortcut;
 				cleanup();
+				updateSaveButtonState();
 			} else {
 				if (keys.length > 0) {
 					btn.innerText = keys.join('+') + '+...';
@@ -358,12 +467,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 			currentAssistant: defaultAssistantSelect.value,
 			autoLaunch: autoLaunchCheckbox.checked,
 			standardWindow: standardWindowCheckbox.checked,
-			theme: themeSelect.value,
+			theme: themeToggle.checked ? 'dark' : 'light',
 			prompts: finalPrompts
 		};
 
 		try {
 			await window.api.saveSettings(newSettings);
+			initialSettingsJSON = JSON.stringify(getSettingsObject());
+			updateSaveButtonState();
+			const exitSettings = await showConfirm(
+				'Settings Saved',
+				'Your settings have been saved successfully.',
+				{
+					confirmText: 'Exit Settings',
+					cancelText: 'Ok',
+					isDestructive: false
+				}
+			);
+			if (exitSettings) {
+				window.api.closeSettings();
+			}
 		} catch (err) {
 			console.error('Failed to save settings:', err);
 		}
@@ -421,7 +544,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			} else {
 				await showConfirm(
 					'Promptly Update',
-					`Promptly is up to date! You are running the latest version (v${result.currentVersion}).`,
+					`Promptly is up to date!\nYou are running the latest version (v${result.currentVersion}).`,
 					{ confirmText: 'OK', showCancel: false }
 				);
 			}
@@ -444,4 +567,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 			window.api.openAboutPage();
 		});
 	}
+
+	// Automatically check for updates on load (quietly, only prompting if an update is available)
+	setTimeout(async () => {
+		try {
+			const result = await window.api.checkUpdateStatus();
+			if (result && result.success && result.updateAvailable) {
+				const confirmed = await showConfirm(
+					'Update Available',
+					`A new version (v${result.latestVersion}) is available! (Current: v${result.currentVersion}).\nWould you like to download and install it now?`,
+					{ confirmText: 'Update Now', cancelText: 'Later' }
+				);
+				if (confirmed) {
+					window.api.startUpdate();
+				}
+			}
+		} catch (err) {
+			console.error('Failed to check updates automatically on load:', err);
+		}
+	}, 1000);
 });

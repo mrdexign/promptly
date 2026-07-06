@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Promptly Settings</title>
+		<title>Promptly</title>
 		<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 		<link rel="stylesheet" href="settings.css" />
 	</head>
@@ -13,7 +13,7 @@
 			<header class="window-header">
 				<div class="header-title">
 					<img src="icons/icon.ico" class="header-icon" alt="icon" onerror="this.style.display = 'none'" />
-					<span>Promptly Settings</span>
+					<span>Promptly</span>
 				</div>
 				<button id="closeBtn" class="no-drag close-btn" title="Close">&times;</button>
 			</header>
@@ -46,40 +46,66 @@
 
 						<div class="settings-group">
 							<div class="setting-item">
-								<div class="setting-info">
-									<label for="defaultAssistant">Default AI Assistant</label>
-									<span>Choose which AI service opens when you activate Promptly.</span>
+								<div class="setting-item-left">
+									<i data-lucide="bot" class="setting-icon"></i>
+									<div class="setting-info">
+										<label for="defaultAssistant">Default AI Assistant</label>
+										<span>Choose which AI service opens when you activate Promptly.</span>
+									</div>
 								</div>
 								<div class="setting-control">
-									<select id="defaultAssistant" class="form-select">
-										<option value="Copilot">Copilot</option>
-										<option value="Arena">Arena</option>
-										<option value="Gemini">Gemini</option>
-										<option value="Perplexity">Perplexity</option>
-										<option value="Monica">Monica</option>
-										<option value="Qwen">Qwen</option>
-									</select>
+									<div class="custom-select-wrapper no-drag">
+										<div class="custom-select-trigger">
+											<span id="customSelectLabel">Copilot</span>
+											<i data-lucide="chevron-down" class="chevron-icon"></i>
+										</div>
+										<div class="custom-select-options">
+											<div class="custom-select-option" data-value="Copilot">Copilot</div>
+											<div class="custom-select-option" data-value="Arena">Arena</div>
+											<div class="custom-select-option" data-value="Gemini">Gemini</div>
+											<div class="custom-select-option" data-value="Perplexity">Perplexity</div>
+											<div class="custom-select-option" data-value="Monica">Monica</div>
+											<div class="custom-select-option" data-value="Qwen">Qwen</div>
+										</div>
+										<select id="defaultAssistant" style="display: none;">
+											<option value="Copilot">Copilot</option>
+											<option value="Arena">Arena</option>
+											<option value="Gemini">Gemini</option>
+											<option value="Perplexity">Perplexity</option>
+											<option value="Monica">Monica</option>
+											<option value="Qwen">Qwen</option>
+										</select>
+									</div>
 								</div>
 							</div>
 
 							<div class="setting-item">
-								<div class="setting-info">
-									<label for="themeSelect">Theme Mode</label>
-									<span>Set the appearance mode for Promptly.</span>
+								<div class="setting-item-left">
+									<i data-lucide="palette" class="setting-icon"></i>
+									<div class="setting-info">
+										<label for="themeToggle">Theme Mode</label>
+										<span>Toggle between Light and Dark appearance.</span>
+									</div>
 								</div>
 								<div class="setting-control">
-									<select id="themeSelect" class="form-select">
-										<option value="system">System</option>
-										<option value="dark">Dark Mode</option>
-										<option value="light">Light Mode</option>
-									</select>
+									<div class="theme-toggle-wrapper">
+										<input type="checkbox" id="themeToggle" class="theme-toggle-checkbox" />
+										<label for="themeToggle" class="theme-toggle-label">
+											<i data-lucide="sun" class="icon-sun"></i>
+											<i data-lucide="moon" class="icon-moon"></i>
+											<span class="theme-toggle-ball"></span>
+										</label>
+									</div>
 								</div>
 							</div>
 
 							<div class="setting-item">
-								<div class="setting-info">
-									<label for="autoLaunch">Auto-Launch on Startup</label>
-									<span>Run Promptly automatically when your system boots up.</span>
+								<div class="setting-item-left">
+									<i data-lucide="power" class="setting-icon"></i>
+									<div class="setting-info">
+										<label for="autoLaunch">Auto-Launch on Startup</label>
+										<span>Run Promptly automatically when your system boots up.</span>
+									</div>
 								</div>
 								<div class="setting-control">
 									<label class="switch">
@@ -90,9 +116,12 @@
 							</div>
 
 							<div class="setting-item">
-								<div class="setting-info">
-									<label for="standardWindow">Standard Window Mode</label>
-									<span>Show window controls (close, minimize, maximize) and allow resizing.</span>
+								<div class="setting-item-left">
+									<i data-lucide="monitor" class="setting-icon"></i>
+									<div class="setting-info">
+										<label for="standardWindow">Standard Window Mode</label>
+										<span>Show window controls (close, minimize, maximize) and allow resizing.</span>
+									</div>
 								</div>
 								<div class="setting-control">
 									<label class="switch">
@@ -103,9 +132,12 @@
 							</div>
 
 							<div class="setting-item">
-								<div class="setting-info">
-									<label>Check for Updates</label>
-									<span id="updateVersionInfo">Loading version...</span>
+								<div class="setting-item-left">
+									<i data-lucide="refresh-cw" class="setting-icon"></i>
+									<div class="setting-info">
+										<label>Check for Updates</label>
+										<span id="updateVersionInfo">Loading version...</span>
+									</div>
 								</div>
 								<div class="setting-control">
 									<button id="checkUpdateBtn" class="btn btn-secondary no-drag">Check for Updates</button>
