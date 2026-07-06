@@ -27,8 +27,12 @@
 							<span>General</span>
 						</button>
 						<button class="tab-btn" data-tab="prompts">
-							<i data-lucide="terminal" class="tab-icon"></i>
+							<i data-lucide="pencil-sparkles" class="tab-icon"></i>
 							<span>Prompts</span>
+						</button>
+						<button class="tab-btn" data-tab="history">
+							<i data-lucide="history" class="tab-icon"></i>
+							<span>History</span>
 						</button>
 					</div>
 					<div class="sidebar-footer">
@@ -54,9 +58,9 @@
 									</div>
 								</div>
 								<div class="setting-control">
-									<div class="custom-select-wrapper no-drag">
+									<div class="custom-select-wrapper no-drag" data-select-id="defaultAssistant">
 										<div class="custom-select-trigger">
-											<span id="customSelectLabel">Copilot</span>
+											<span class="custom-select-label">Copilot</span>
 											<i data-lucide="chevron-down" class="chevron-icon"></i>
 										</div>
 										<div class="custom-select-options">
@@ -173,6 +177,29 @@
 							</div>
 						</div>
 					</section>
+
+					<!-- History Tab Content -->
+					<section id="historyTab" class="tab-content">
+						<div class="history-header">
+							<div>
+								<h2>Prompt History</h2>
+								<p class="section-desc">View, search, and manage your past AI prompt logs.</p>
+							</div>
+							<div class="header-actions">
+								<div class="history-search-container no-drag">
+									<i data-lucide="search" class="search-icon"></i>
+									<input type="text" id="historySearchInput" class="text-input" placeholder="Search prompts history..." />
+								</div>
+								<button id="historySettingsBtn" class="btn btn-secondary btn-icon no-drag" title="History Settings">
+									<i data-lucide="settings-2"></i>
+								</button>
+							</div>
+						</div>
+
+						<div id="historyList" class="history-list">
+							<!-- Populated dynamically via settings.js -->
+						</div>
+					</section>
 				</main>
 			</div>
 
@@ -181,6 +208,43 @@
 				<button id="cancelBtn" class="btn btn-text">Cancel</button>
 				<button id="saveBtn" class="btn btn-primary">Save Settings</button>
 			</footer>
+		</div>
+
+		<!-- History Settings Modal -->
+		<div id="historySettingsModal" class="modal-overlay">
+			<div class="modal-card small-modal-card">
+				<div class="modal-header">
+					<h3>History Settings</h3>
+					<button id="historySettingsCloseBtn" class="modal-close-x">&times;</button>
+				</div>
+				<div class="modal-body modal-settings-group">
+					<div class="setting-item">
+						<div class="setting-info">
+							<label for="historyCleanupSelect">Cleanup</label>
+							<span>How long prompts are kept.</span>
+						</div>
+						<div class="setting-control">
+							<select id="historyCleanupSelect" class="form-select form-select-sm no-drag">
+								<option value="daily">Daily</option>
+								<option value="2days">Last 2 Days</option>
+								<option value="5days">Last 5 Days</option>
+								<option value="week">Last Week</option>
+								<option value="never">Never</option>
+							</select>
+						</div>
+					</div>
+					<div class="divider"></div>
+					<div class="setting-item">
+						<div class="setting-info">
+							<label>Clear History</label>
+							<span>Permanently delete all prompts.</span>
+						</div>
+						<div class="setting-control">
+							<button id="clearHistoryBtn" class="btn btn-danger no-drag">Clear History</button>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<!-- Custom Confirmation Modal -->

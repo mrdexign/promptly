@@ -876,6 +876,7 @@ body.theme-dark .theme-toggle-label {
 	position: relative;
 	width: 140px;
 	user-select: none;
+	height: 38px;
 }
 
 .custom-select-trigger {
@@ -961,3 +962,237 @@ body.theme-dark .theme-toggle-label {
 	color: #FFFFFF !important;
 	font-weight: 500;
 }
+
+/* History Tab Styles */
+.history-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 16px;
+}
+
+.history-cleanup-wrapper {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.history-cleanup-wrapper label {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-secondary);
+}
+
+.history-search-container {
+	position: relative;
+	margin-bottom: 18px;
+}
+
+.history-search-container .search-icon {
+	position: absolute;
+	left: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 16px;
+	height: 16px;
+	color: var(--text-secondary);
+	pointer-events: none;
+}
+
+#historySearchInput {
+	padding-left: 36px;
+	height: 38px;
+	box-sizing: border-box;
+}
+
+.history-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	overflow-y: auto;
+	height: 390px;
+	padding-right: 4px;
+}
+
+.history-card {
+	background: var(--bg-card);
+	border: 1px solid var(--border-color);
+	border-radius: 10px;
+	padding: 14px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	transition: all 0.2s ease;
+	box-sizing: border-box;
+}
+
+.history-card:hover {
+	border-color: rgba(99, 102, 241, 0.3);
+	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+	transform: translateY(-1px);
+}
+
+.history-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid var(--border-color);
+	padding-bottom: 8px;
+}
+
+.history-card-time {
+	font-size: 11px;
+	font-weight: 500;
+	color: var(--text-secondary);
+}
+
+.history-card-actions {
+	display: flex;
+	gap: 6px;
+}
+
+.history-action-btn {
+	background: transparent;
+	border: none;
+	color: var(--text-secondary);
+	cursor: pointer;
+	padding: 4px;
+	border-radius: 4px;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	box-sizing: border-box;
+}
+
+.history-action-btn:hover {
+	color: var(--text-primary);
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.history-action-btn.btn-delete-item:hover {
+	color: var(--danger-red);
+	background: rgba(239, 68, 68, 0.12);
+}
+
+.history-action-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+.history-card-body {
+	font-size: 13px;
+	color: var(--text-primary);
+	line-height: 1.5;
+	white-space: pre-wrap;
+	word-break: break-word;
+	max-height: 120px;
+	overflow-y: auto;
+	user-select: text; /* Allow partial text selection */
+	padding-right: 4px;
+}
+
+/* Empty state styling */
+.history-empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 200px;
+	color: var(--text-secondary);
+	gap: 12px;
+	font-size: 13.5px;
+}
+
+.history-empty-state svg {
+	width: 48px;
+	height: 48px;
+	opacity: 0.5;
+	color: var(--text-secondary);
+}
+
+/* Small native styled form select */
+.form-select-sm {
+	height: 32px;
+	width: 120px;
+	padding: 4px 24px 4px 10px;
+	font-size: 12px;
+	border-radius: 5px;
+	background-position: right 8px center;
+	background-size: 10px;
+}
+
+.history-card-header-left {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.history-card-model-pill {
+	background: rgba(99, 102, 241, 0.12);
+	border: 1px solid rgba(99, 102, 241, 0.25);
+	color: var(--text-active);
+	padding: 1px 6px;
+	border-radius: 12px;
+	font-size: 9px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+/* Search field layout when inside history header actions */
+.header-actions .history-search-container {
+	margin-bottom: 0;
+	width: 240px;
+}
+
+/* Button with Icon Only */
+.btn-icon {
+	padding: 8px;
+	width: 38px;
+	height: 38px;
+	box-sizing: border-box;
+}
+
+.btn-icon svg {
+	width: 18px;
+	height: 18px;
+}
+
+/* Small modal overrides for history settings */
+.small-modal-card {
+	width: 380px;
+	overflow: visible;
+}
+
+.modal-settings-group {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 20px;
+}
+
+.modal-settings-group .setting-item {
+	border: none;
+	padding: 0;
+	background: transparent;
+	border-radius: 0;
+	display: flex !important;
+	align-items: center !important;
+}
+
+.modal-settings-group .setting-control {
+	display: flex !important;
+	align-items: center !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+.modal-settings-group .divider {
+	height: 1px;
+	background: var(--border-color);
+	margin: 4px 0;
+}
+

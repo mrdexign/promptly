@@ -12,6 +12,7 @@ if (require('electron-squirrel-startup')) app?.quit();
 const ASSETS = {
 	icon: path.join(__dirname, 'icons/icon.ico'),
 	config: path.join(app.getPath('userData'), 'assistant-config.json'),
+	history: path.join(app.getPath('userData'), 'assistant-history.json'),
 };
 
 const URLS = {
@@ -63,6 +64,7 @@ const loadSettings = () => {
 				}
 				if (data.standardWindow === undefined) data.standardWindow = false;
 				if (data.theme === undefined) data.theme = 'dark';
+				if (data.historyCleanup === undefined) data.historyCleanup = 'daily';
 				return data;
 			}
 		}
@@ -76,6 +78,7 @@ const loadSettings = () => {
 		prompts: getDefaultPrompts(),
 		standardWindow: false,
 		theme: 'dark',
+		historyCleanup: 'daily',
 	};
 	try {
 		fs.writeFileSync(ASSETS.config, JSON.stringify(defaults, null, 2));
@@ -216,6 +219,23 @@ ipcMain.on('close-settings', () => {
 
 ipcMain.handle('get-app-version', () => app.getVersion());
 ipcMain.handle('get-default-prompts', () => getDefaultPrompts());
+
+// --- History IPC Handlers ---
+ipcMain.handle('get-history', () => {
+	return loadHistory();
+});
+
+ipcMain.handle('clear-history', () => {
+	saveHistory([]);
+	return [];
+});
+
+ipcMain.handle('delete-history-item', (_, id) => {
+	const items = loadHistory();
+	const filtered = items.filter(item => item.id !== id);
+	saveHistory(filtered);
+	return filtered;
+});
 
 ipcMain.handle('check-update-status', async () => {
 	try {
@@ -700,6 +720,9 @@ const askAI = async (promptPrefix, autoSubmit = true) => {
 		// Optional: Save combined prompt to clipboard for user reference
 		clipboard.writeText(fullPrompt);
 
+		// Log to history
+		addHistoryItem(fullPrompt);
+
 		// 4. Send to Renderer
 		if (win) {
 			win.webContents.focus();
@@ -708,6 +731,70 @@ const askAI = async (promptPrefix, autoSubmit = true) => {
 	} catch (err) {
 		console.error('Clipboard Action Failed:', err);
 		clipboard.writeText(oldClipboard);
+	}
+};
+
+// --- History Management ---
+const loadHistory = () => {
+	try {
+		if (fs.existsSync(ASSETS.history)) {
+			const data = JSON.parse(fs.readFileSync(ASSETS.history, 'utf8'));
+			if (Array.isArray(data)) {
+				return pruneHistory(data);
+			}
+		}
+	} catch (err) {
+		console.error('Failed to load history:', err);
+	}
+	return [];
+};
+
+const saveHistory = (items) => {
+	try {
+		fs.writeFileSync(ASSETS.history, JSON.stringify(items, null, 2));
+	} catch (err) {
+		console.error('Failed to save history:', err);
+	}
+};
+
+const pruneHistory = (items) => {
+	const cleanup = appSettings.historyCleanup || 'daily';
+	if (cleanup === 'never') return items;
+
+	const now = Date.now();
+	let maxAgeMs = 0;
+
+	if (cleanup === 'daily') {
+		maxAgeMs = 24 * 60 * 60 * 1000;
+	} else if (cleanup === '2days') {
+		maxAgeMs = 2 * 24 * 60 * 60 * 1000;
+	} else if (cleanup === '5days') {
+		maxAgeMs = 5 * 24 * 60 * 60 * 1000;
+	} else if (cleanup === 'week') {
+		maxAgeMs = 7 * 24 * 60 * 60 * 1000;
+	}
+
+	const filtered = items.filter(item => (now - item.timestamp) < maxAgeMs);
+	if (filtered.length !== items.length) {
+		saveHistory(filtered);
+	}
+	return filtered;
+};
+
+const addHistoryItem = (text) => {
+	const items = loadHistory();
+	const newItem = {
+		id: 'hist-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+		timestamp: Date.now(),
+		text,
+		assistant: currentAssistant
+	};
+	items.unshift(newItem);
+	const pruned = pruneHistory(items);
+	saveHistory(pruned);
+	
+	if (settingsWin && !settingsWin.isDestroyed()) {
+		settingsWin.webContents.send('history-updated', pruned);
 	}
 };
 

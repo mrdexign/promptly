@@ -9,4 +9,8 @@ contextBridge.exposeInMainWorld('api', {
 	startUpdate: () => ipcRenderer.send('start-update'),
 	openAboutPage: () => ipcRenderer.send('open-about-page'),
 	getDefaultPrompts: () => ipcRenderer.invoke('get-default-prompts'),
+	getHistory: () => ipcRenderer.invoke('get-history'),
+	clearHistory: () => ipcRenderer.invoke('clear-history'),
+	deleteHistoryItem: (id) => ipcRenderer.invoke('delete-history-item', id),
+	onHistoryUpdated: (callback) => ipcRenderer.on('history-updated', (_, items) => callback(items)),
 });

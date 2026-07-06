@@ -14,7 +14,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const cancelBtn = document.getElementById('cancelBtn');
 	const closeBtn = document.getElementById('closeBtn');
 
+	const historyTab = document.getElementById('historyTab');
+	const historyList = document.getElementById('historyList');
+	const historySearchInput = document.getElementById('historySearchInput');
+	const historyCleanupSelect = document.getElementById('historyCleanupSelect');
+	const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+	const historySettingsModal = document.getElementById('historySettingsModal');
+	const historySettingsBtn = document.getElementById('historySettingsBtn');
+	const historySettingsCloseBtn = document.getElementById('historySettingsCloseBtn');
+
 	let activePrompts = [];
+	let activeHistory = [];
 	let recordingBtn = null;
 	let originalShortcut = '';
 	let initialSettingsJSON = '';
@@ -31,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			autoLaunch: autoLaunchCheckbox.checked,
 			standardWindow: standardWindowCheckbox.checked,
 			theme: themeToggle.checked ? 'dark' : 'light',
+			historyCleanup: historyCleanupSelect.value,
 			prompts: finalPrompts.map(p => ({
 				id: p.id,
 				name: p.name,
@@ -158,6 +169,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const tabId = btn.dataset.tab;
 			if (tabId === 'general') generalTab.classList.add('active');
 			if (tabId === 'prompts') promptsTab.classList.add('active');
+			if (tabId === 'history') {
+				historyTab.classList.add('active');
+				loadHistoryList();
+			}
 		});
 	});
 
@@ -169,6 +184,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		standardWindowCheckbox.checked = !!settings.standardWindow;
 		themeToggle.checked = settings.theme !== 'light';
 		applyTheme(themeToggle.checked ? 'dark' : 'light');
+		historyCleanupSelect.value = settings.historyCleanup || 'daily';
 		activePrompts = settings.prompts || [];
 		
 		const defaults = await window.api.getDefaultPrompts();
@@ -183,60 +199,247 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		renderPromptsList();
 
-		defaultAssistantSelect.addEventListener('change', () => {
-			syncCustomSelect();
-			updateSaveButtonState();
-		});
+		defaultAssistantSelect.addEventListener('change', updateSaveButtonState);
 		autoLaunchCheckbox.addEventListener('change', updateSaveButtonState);
 		standardWindowCheckbox.addEventListener('change', updateSaveButtonState);
 		themeToggle.addEventListener('change', updateSaveButtonState);
+		historyCleanupSelect.addEventListener('change', updateSaveButtonState);
 
 		// Setup custom dropdown logic
-		const customSelectWrapper = document.querySelector('.custom-select-wrapper');
-		const customSelectTrigger = document.querySelector('.custom-select-trigger');
-		
-		function syncCustomSelect() {
-			const val = defaultAssistantSelect.value;
-			const labelSpan = document.getElementById('customSelectLabel');
-			if (labelSpan) labelSpan.textContent = val;
-			
-			document.querySelectorAll('.custom-select-option').forEach(opt => {
-				if (opt.dataset.value === val) {
-					opt.classList.add('selected');
-				} else {
-					opt.classList.remove('selected');
+		const initCustomSelects = () => {
+			document.querySelectorAll('.custom-select-wrapper').forEach(wrapper => {
+				const trigger = wrapper.querySelector('.custom-select-trigger');
+				const label = wrapper.querySelector('.custom-select-label');
+				const optionsContainer = wrapper.querySelector('.custom-select-options');
+				const selectId = wrapper.dataset.selectId;
+				const hiddenSelect = document.getElementById(selectId);
+				if (!hiddenSelect || !trigger || !label || !optionsContainer) return;
+
+				const syncValue = () => {
+					const val = hiddenSelect.value;
+					const activeOpt = wrapper.querySelector(`.custom-select-option[data-value="${val}"]`);
+					if (activeOpt) {
+						label.textContent = activeOpt.textContent;
+					}
+					
+					wrapper.querySelectorAll('.custom-select-option').forEach(opt => {
+						if (opt.dataset.value === val) {
+							opt.classList.add('selected');
+						} else {
+							opt.classList.remove('selected');
+						}
+					});
+				};
+
+				trigger.addEventListener('click', (e) => {
+					e.stopPropagation();
+					document.querySelectorAll('.custom-select-wrapper').forEach(other => {
+						if (other !== wrapper) other.classList.remove('active');
+					});
+					wrapper.classList.toggle('active');
+				});
+
+				wrapper.querySelectorAll('.custom-select-option').forEach(opt => {
+					opt.addEventListener('click', (e) => {
+						e.stopPropagation();
+						const val = opt.dataset.value;
+						hiddenSelect.value = val;
+						hiddenSelect.dispatchEvent(new Event('change'));
+						wrapper.classList.remove('active');
+					});
+				});
+
+				hiddenSelect.addEventListener('change', syncValue);
+				syncValue();
+			});
+
+			document.addEventListener('click', () => {
+				document.querySelectorAll('.custom-select-wrapper').forEach(wrapper => {
+					wrapper.classList.remove('active');
+				});
+			});
+		};
+
+		initCustomSelects();
+
+		// Setup history page UI event listeners
+		historySearchInput.addEventListener('input', () => {
+			renderHistoryList();
+		});
+
+		if (historySettingsBtn && historySettingsModal) {
+			historySettingsBtn.addEventListener('click', (e) => {
+				e.preventDefault();
+				historySettingsModal.classList.add('active');
+			});
+		}
+
+		if (historySettingsCloseBtn && historySettingsModal) {
+			historySettingsCloseBtn.addEventListener('click', (e) => {
+				e.preventDefault();
+				historySettingsModal.classList.remove('active');
+			});
+		}
+
+		if (historySettingsModal) {
+			historySettingsModal.addEventListener('click', (e) => {
+				if (e.target === historySettingsModal) {
+					historySettingsModal.classList.remove('active');
 				}
 			});
 		}
 
-		if (customSelectTrigger && customSelectWrapper) {
-			customSelectTrigger.addEventListener('click', (e) => {
-				e.stopPropagation();
-				customSelectWrapper.classList.toggle('active');
-			});
-
-			document.querySelectorAll('.custom-select-option').forEach(opt => {
-				opt.addEventListener('click', (e) => {
-					e.stopPropagation();
-					const val = opt.dataset.value;
-					defaultAssistantSelect.value = val;
-					defaultAssistantSelect.dispatchEvent(new Event('change'));
-					customSelectWrapper.classList.remove('active');
-				});
-			});
-
-			document.addEventListener('click', () => {
-				customSelectWrapper.classList.remove('active');
+		if (window.api.onHistoryUpdated) {
+			window.api.onHistoryUpdated((items) => {
+				activeHistory = items;
+				renderHistoryList();
 			});
 		}
 
-		syncCustomSelect();
+		clearHistoryBtn.addEventListener('click', async (e) => {
+			e.preventDefault();
+			if (activeHistory.length === 0) return;
+			const confirmed = await showConfirm(
+				'Clear All History',
+				'Are you sure you want to permanently delete your entire prompt history? This cannot be undone.',
+				{ isDestructive: true, confirmText: 'Clear All' }
+			);
+			if (confirmed) {
+				try {
+					activeHistory = await window.api.clearHistory();
+					renderHistoryList();
+					if (historySettingsModal) {
+						historySettingsModal.classList.remove('active');
+					}
+				} catch (err) {
+					console.error('Failed to clear history:', err);
+				}
+			}
+		});
 
 		initialSettingsJSON = JSON.stringify(getSettingsObject());
 		updateSaveButtonState();
 	} catch (err) {
 		console.error('Failed to load settings:', err);
 	}
+
+	const loadHistoryList = async () => {
+		try {
+			activeHistory = await window.api.getHistory();
+			renderHistoryList();
+		} catch (err) {
+			console.error('Failed to load history list:', err);
+		}
+	};
+
+	const renderHistoryList = () => {
+		historyList.innerHTML = '';
+		const query = historySearchInput.value.toLowerCase().trim();
+		
+		const filtered = activeHistory.filter(item => {
+			return item.text.toLowerCase().includes(query);
+		});
+
+		if (filtered.length === 0) {
+			const emptyState = document.createElement('div');
+			emptyState.className = 'history-empty-state';
+			emptyState.innerHTML = `
+				<i data-lucide="archive"></i>
+				<span>${query ? 'No matching prompts found.' : 'No prompt history logs yet.'}</span>
+			`;
+			historyList.appendChild(emptyState);
+			lucide.createIcons();
+			return;
+		}
+
+		filtered.forEach(item => {
+			const card = document.createElement('div');
+			card.className = 'history-card';
+
+			const header = document.createElement('div');
+			header.className = 'history-card-header';
+
+			const headerLeft = document.createElement('div');
+			headerLeft.className = 'history-card-header-left';
+
+			const dateStr = new Date(item.timestamp).toLocaleString(undefined, {
+				dateStyle: 'medium',
+				timeStyle: 'short'
+			});
+
+			const timeSpan = document.createElement('span');
+			timeSpan.className = 'history-card-time';
+			timeSpan.textContent = dateStr;
+			headerLeft.appendChild(timeSpan);
+
+			if (item.assistant) {
+				const modelPill = document.createElement('span');
+				modelPill.className = 'history-card-model-pill';
+				modelPill.textContent = item.assistant;
+				headerLeft.appendChild(modelPill);
+			}
+
+			const actions = document.createElement('div');
+			actions.className = 'history-card-actions';
+
+			const copyBtn = document.createElement('button');
+			copyBtn.className = 'history-action-btn no-drag';
+			copyBtn.title = 'Copy prompt text';
+			copyBtn.innerHTML = '<i data-lucide="copy"></i>';
+			copyBtn.addEventListener('click', async (e) => {
+				e.stopPropagation();
+				try {
+					await navigator.clipboard.writeText(item.text);
+					
+					copyBtn.innerHTML = '<i data-lucide="check" style="color: #10B981;"></i>';
+					lucide.createIcons();
+					setTimeout(() => {
+						copyBtn.innerHTML = '<i data-lucide="copy"></i>';
+						lucide.createIcons();
+					}, 1500);
+				} catch (err) {
+					console.error('Failed to copy text:', err);
+				}
+			});
+
+			const deleteItemBtn = document.createElement('button');
+			deleteItemBtn.className = 'history-action-btn btn-delete-item no-drag';
+			deleteItemBtn.title = 'Delete history item';
+			deleteItemBtn.innerHTML = '<i data-lucide="trash-2"></i>';
+			deleteItemBtn.addEventListener('click', async (e) => {
+				e.stopPropagation();
+				const confirmed = await showConfirm(
+					'Delete History Item',
+					'Are you sure you want to delete this prompt from your history?',
+					{ isDestructive: true, confirmText: 'Delete' }
+				);
+				if (confirmed) {
+					try {
+						activeHistory = await window.api.deleteHistoryItem(item.id);
+						renderHistoryList();
+					} catch (err) {
+						console.error('Failed to delete history item:', err);
+					}
+				}
+			});
+
+			actions.appendChild(copyBtn);
+			actions.appendChild(deleteItemBtn);
+			header.appendChild(headerLeft);
+			header.appendChild(actions);
+
+			const body = document.createElement('div');
+			body.className = 'history-card-body';
+			body.textContent = item.text;
+
+			card.appendChild(header);
+			card.appendChild(body);
+
+			historyList.appendChild(card);
+		});
+
+		lucide.createIcons();
+	};
 
 	// --- Render Prompts List ---
 	function renderPromptsList() {
@@ -468,6 +671,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			autoLaunch: autoLaunchCheckbox.checked,
 			standardWindow: standardWindowCheckbox.checked,
 			theme: themeToggle.checked ? 'dark' : 'light',
+			historyCleanup: historyCleanupSelect.value,
 			prompts: finalPrompts
 		};
 
