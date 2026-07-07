@@ -5,7 +5,7 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
 	packagerConfig: {
 		asar: true,
-		icon: path.join(__dirname, 'icons/icon.ico'),
+		icon: path.join(__dirname, 'assets', 'icons', 'icon.ico'),
 	},
 	rebuildConfig: {},
 	makers: [
@@ -13,7 +13,7 @@ module.exports = {
 			name: '@electron-forge/maker-squirrel',
 			config: {
 				name: 'Promptly',
-				setupIcon: path.join(__dirname, 'icons/icon.ico'),
+				setupIcon: path.join(__dirname, 'assets', 'icons', 'icon.ico'),
 			},
 		},
 		{

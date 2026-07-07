@@ -2,7 +2,7 @@
 	"name": "promptly",
 	"version": "1.6.0",
 	"description": "An Electron app to quickly access ai services.",
-	"main": "main.js",
+	"main": "src/main/index.js",
 	"scripts": {
 		"make": "electron-forge make",
 		"start": "electron-forge start",
