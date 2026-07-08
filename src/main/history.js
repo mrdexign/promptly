@@ -46,7 +46,7 @@ const pruneHistory = (state, items) => {
 	return filtered;
 };
 
-const addHistoryItem = (state, text) => {
+const addHistoryItem = (state, text, response = null) => {
 	const items = loadHistory(state);
 	const newItem = {
 		id: 'hist-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
@@ -54,6 +54,9 @@ const addHistoryItem = (state, text) => {
 		text,
 		assistant: state.currentAssistant
 	};
+	if (response) {
+		newItem.response = response;
+	}
 	items.unshift(newItem);
 	const pruned = pruneHistory(state, items);
 	saveHistory(state, pruned);

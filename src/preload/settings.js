@@ -13,4 +13,5 @@ contextBridge.exposeInMainWorld('api', {
 	clearHistory: () => ipcRenderer.invoke('clear-history'),
 	deleteHistoryItem: (id) => ipcRenderer.invoke('delete-history-item', id),
 	onHistoryUpdated: (callback) => ipcRenderer.on('history-updated', (_, items) => callback(items)),
+	fetchModels: (baseUrl, apiKey) => ipcRenderer.invoke('fetch-models', baseUrl, apiKey),
 });

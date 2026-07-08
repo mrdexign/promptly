@@ -26,6 +26,10 @@
 							<i data-lucide="settings" class="tab-icon"></i>
 							<span>General</span>
 						</button>
+						<button class="tab-btn" data-tab="providers">
+							<i data-lucide="cpu" class="tab-icon"></i>
+							<span>Providers</span>
+						</button>
 						<button class="tab-btn" data-tab="prompts">
 							<i data-lucide="pencil-sparkles" class="tab-icon"></i>
 							<span>Prompts</span>
@@ -43,135 +47,210 @@
 
 				<!-- Content Area -->
 				<main class="content-container">
-					<!-- General Tab Content -->
-					<section id="generalTab" class="tab-content active">
-						<h2>General Settings</h2>
-						<p class="section-desc">Manage startup behavior and default assistant configurations.</p>
+				<!-- General Tab Content -->
+				<section id="generalTab" class="tab-content active">
+					<h2>General Settings</h2>
+					<p class="section-desc">Manage startup behavior and appearance.</p>
 
-						<div class="settings-group">
-							<div class="setting-item">
-								<div class="setting-item-left">
-									<i data-lucide="bot" class="setting-icon"></i>
-									<div class="setting-info">
-										<label for="defaultAssistant">Default AI Assistant</label>
-										<span>Choose which AI service opens when you activate Promptly.</span>
-									</div>
+					<div class="settings-group">
+						<div class="setting-item provider-selector-item">
+							<div class="setting-item-left">
+								<i data-lucide="zap" class="setting-icon"></i>
+								<div class="setting-info">
+									<label>Active Provider</label>
+									<span id="activeProviderDesc">Loading...</span>
 								</div>
-								<div class="setting-control">
-									<div class="custom-select-wrapper no-drag" data-select-id="defaultAssistant">
-										<div class="custom-select-trigger">
-											<span class="custom-select-label">Copilot</span>
-											<i data-lucide="chevron-down" class="chevron-icon"></i>
+							</div>
+							<div class="setting-control">
+								<div class="provider-select-wrapper no-drag" id="providerSelectWrapper">
+									<div class="provider-select-trigger" id="providerSelectTrigger">
+										<span class="provider-select-badge" id="providerBadge"></span>
+										<span class="provider-select-label" id="providerSelectLabel">Loading...</span>
+										<i data-lucide="chevron-down" class="chevron-icon"></i>
+									</div>
+									<div class="provider-select-dropdown" id="providerSelectDropdown">
+										<div class="provider-select-group">
+											<div class="provider-select-group-label">Web Chats</div>
+											<div class="provider-select-option" data-value="Copilot" data-type="webchat">
+												<span class="provider-option-icon">🌐</span>
+												<span>Copilot</span>
+											</div>
+											<div class="provider-select-option" data-value="Arena" data-type="webchat">
+												<span class="provider-option-icon">🌐</span>
+												<span>Arena</span>
+											</div>
+											<div class="provider-select-option" data-value="Gemini" data-type="webchat">
+												<span class="provider-option-icon">🌐</span>
+												<span>Gemini</span>
+											</div>
+											<div class="provider-select-option" data-value="Perplexity" data-type="webchat">
+												<span class="provider-option-icon">🌐</span>
+												<span>Perplexity</span>
+											</div>
+											<div class="provider-select-option" data-value="Monica" data-type="webchat">
+												<span class="provider-option-icon">🌐</span>
+												<span>Monica</span>
+											</div>
+											<div class="provider-select-option" data-value="Qwen" data-type="webchat">
+												<span class="provider-option-icon">🌐</span>
+												<span>Qwen</span>
+											</div>
 										</div>
-										<div class="custom-select-options">
-											<div class="custom-select-option" data-value="Copilot">Copilot</div>
-											<div class="custom-select-option" data-value="Arena">Arena</div>
-											<div class="custom-select-option" data-value="Gemini">Gemini</div>
-											<div class="custom-select-option" data-value="Perplexity">Perplexity</div>
-											<div class="custom-select-option" data-value="Monica">Monica</div>
-											<div class="custom-select-option" data-value="Qwen">Qwen</div>
+										<div class="provider-select-divider"></div>
+										<div class="provider-select-group" id="apiProvidersGroup">
+											<div class="provider-select-group-label">API Providers</div>
+											<!-- Populated dynamically -->
 										</div>
-										<select id="defaultAssistant" style="display: none;">
-											<option value="Copilot">Copilot</option>
-											<option value="Arena">Arena</option>
-											<option value="Gemini">Gemini</option>
-											<option value="Perplexity">Perplexity</option>
-											<option value="Monica">Monica</option>
-											<option value="Qwen">Qwen</option>
-										</select>
 									</div>
-								</div>
-							</div>
-
-							<div class="setting-item">
-								<div class="setting-item-left">
-									<i data-lucide="palette" class="setting-icon"></i>
-									<div class="setting-info">
-										<label for="themeToggle">Theme Mode</label>
-										<span>Toggle between Light and Dark appearance.</span>
-									</div>
-								</div>
-								<div class="setting-control">
-									<div class="theme-toggle-wrapper">
-										<input type="checkbox" id="themeToggle" class="theme-toggle-checkbox" />
-										<label for="themeToggle" class="theme-toggle-label">
-											<i data-lucide="sun" class="icon-sun"></i>
-											<i data-lucide="moon" class="icon-moon"></i>
-											<span class="theme-toggle-ball"></span>
-										</label>
-									</div>
-								</div>
-							</div>
-
-							<div class="setting-item">
-								<div class="setting-item-left">
-									<i data-lucide="power" class="setting-icon"></i>
-									<div class="setting-info">
-										<label for="autoLaunch">Auto-Launch on Startup</label>
-										<span>Run Promptly automatically when your system boots up.</span>
-									</div>
-								</div>
-								<div class="setting-control">
-									<label class="switch">
-										<input type="checkbox" id="autoLaunch" />
-										<span class="slider"></span>
-									</label>
-								</div>
-							</div>
-
-							<div class="setting-item">
-								<div class="setting-item-left">
-									<i data-lucide="monitor" class="setting-icon"></i>
-									<div class="setting-info">
-										<label for="standardWindow">Standard Window Mode</label>
-										<span>Show window controls (close, minimize, maximize) and allow resizing.</span>
-									</div>
-								</div>
-								<div class="setting-control">
-									<label class="switch">
-										<input type="checkbox" id="standardWindow" />
-										<span class="slider"></span>
-									</label>
-								</div>
-							</div>
-
-							<div class="setting-item">
-								<div class="setting-item-left">
-									<i data-lucide="refresh-cw" class="setting-icon"></i>
-									<div class="setting-info">
-										<label>Check for Updates</label>
-										<span id="updateVersionInfo">Loading version...</span>
-									</div>
-								</div>
-								<div class="setting-control">
-									<button id="checkUpdateBtn" class="btn btn-secondary no-drag">Check for Updates</button>
 								</div>
 							</div>
 						</div>
-					</section>
+
+						<div class="setting-item">
+							<div class="setting-item-left">
+								<i data-lucide="palette" class="setting-icon"></i>
+								<div class="setting-info">
+									<label for="themeToggle">Theme Mode</label>
+									<span>Toggle between Light and Dark appearance.</span>
+								</div>
+							</div>
+							<div class="setting-control">
+								<div class="theme-toggle-wrapper">
+									<input type="checkbox" id="themeToggle" class="theme-toggle-checkbox" />
+									<label for="themeToggle" class="theme-toggle-label">
+										<i data-lucide="sun" class="icon-sun"></i>
+										<i data-lucide="moon" class="icon-moon"></i>
+										<span class="theme-toggle-ball"></span>
+									</label>
+								</div>
+							</div>
+						</div>
+
+						<div class="setting-item">
+							<div class="setting-item-left">
+								<i data-lucide="power" class="setting-icon"></i>
+								<div class="setting-info">
+									<label for="autoLaunch">Auto-Launch on Startup</label>
+									<span>Run Promptly automatically when your system boots up.</span>
+								</div>
+							</div>
+							<div class="setting-control">
+								<label class="switch">
+									<input type="checkbox" id="autoLaunch" />
+									<span class="slider"></span>
+								</label>
+							</div>
+						</div>
+
+						<div class="setting-item">
+							<div class="setting-item-left">
+								<i data-lucide="monitor" class="setting-icon"></i>
+								<div class="setting-info">
+									<label for="standardWindow">Standard Window Mode</label>
+									<span>Show window controls (close, minimize, maximize) and allow resizing.</span>
+								</div>
+							</div>
+							<div class="setting-control">
+								<label class="switch">
+									<input type="checkbox" id="standardWindow" />
+									<span class="slider"></span>
+								</label>
+							</div>
+						</div>
+
+						<div class="setting-item">
+							<div class="setting-item-left">
+								<i data-lucide="refresh-cw" class="setting-icon"></i>
+								<div class="setting-info">
+									<label>Check for Updates</label>
+									<span id="updateVersionInfo">Loading version...</span>
+								</div>
+							</div>
+							<div class="setting-control">
+								<button id="checkUpdateBtn" class="btn btn-secondary no-drag">Check for Updates</button>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Providers Tab Content -->
+				<section id="providersTab" class="tab-content">
+					<h2>Providers</h2>
+					<p class="section-desc">Manage Web Chat integrations and custom API providers.</p>
+
+					<!-- Web Chats Group -->
+					<div class="providers-group">
+						<div class="group-header">
+							<h3>Web Chats</h3>
+							<span class="group-desc">Predefined web chat interfaces running in the background.</span>
+						</div>
+						<div id="webChatBox" class="setting-item web-chat-box">
+							<div class="setting-item-left">
+								<i data-lucide="globe" class="setting-icon"></i>
+								<div class="setting-info">
+									<div class="setting-info-row">
+										<label for="webChatSelect">Web Chat Assistant</label>
+										<span id="webChatStatus" class="web-chat-status"></span>
+									</div>
+									<span>Select and activate a web chat assistant.</span>
+								</div>
+							</div>
+							<div class="setting-control">
+								<div class="custom-select-wrapper no-drag" data-select-id="webChatSelect">
+									<div class="custom-select-trigger">
+										<span class="custom-select-label">Copilot</span>
+										<i data-lucide="chevron-down" class="chevron-icon"></i>
+									</div>
+									<div class="custom-select-options">
+										<div class="custom-select-option" data-value="Copilot">Copilot</div>
+										<div class="custom-select-option" data-value="Arena">Arena</div>
+										<div class="custom-select-option" data-value="Gemini">Gemini</div>
+										<div class="custom-select-option" data-value="Perplexity">Perplexity</div>
+										<div class="custom-select-option" data-value="Monica">Monica</div>
+										<div class="custom-select-option" data-value="Qwen">Qwen</div>
+									</div>
+									<select id="webChatSelect" style="display: none;">
+										<option value="Copilot">Copilot</option>
+										<option value="Arena">Arena</option>
+										<option value="Gemini">Gemini</option>
+										<option value="Perplexity">Perplexity</option>
+										<option value="Monica">Monica</option>
+										<option value="Qwen">Qwen</option>
+									</select>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- APIs Group -->
+					<div class="providers-group margin-top-lg">
+						<div class="group-header flex-space-between">
+							<div>
+								<h3>APIs</h3>
+								<span class="group-desc">Connect custom API endpoints compatible with ChatCompletions.</span>
+							</div>
+							<button id="addApiProviderBtn" class="btn btn-secondary no-drag">+ Add API</button>
+						</div>
+						<div id="apiProvidersList" class="api-providers-list">
+							<!-- Populated dynamically via settings.js -->
+						</div>
+					</div>
+				</section>
 
 					<!-- Prompts Tab Content -->
 					<section id="promptsTab" class="tab-content">
 						<div class="prompts-header">
 							<div>
-								<h2>Shortcuts & Prompts</h2>
+								<h2>Prompts & Shortcuts</h2>
 								<p class="section-desc">Map global shortcuts to send custom prompts to the active AI assistant.</p>
 							</div>
-							<div class="header-actions">
-								<button id="resetDefaultsBtn" class="btn btn-secondary no-drag">Reset Defaults</button>
-								<button id="addPromptBtn" class="btn btn-secondary no-drag">+ Add Prompt</button>
-							</div>
+						<div class="header-actions">
+							<button id="resetDefaultsBtn" class="btn btn-secondary btn-icon no-drag" title="Reset Defaults"><i data-lucide="rotate-ccw"></i></button>
+							<button id="addPromptBtn" class="btn btn-primary no-drag">+ Add Prompt</button>
+						</div>
 						</div>
 
 						<div class="prompts-container">
-							<div class="prompts-list-header">
-								<div class="col-name">Name</div>
-								<div class="col-shortcut">Shortcut</div>
-								<div class="col-prompt">Prompt Prefix</div>
-								<div class="col-submit" title="Send message automatically after pasting">Auto-Submit</div>
-								<div class="col-actions"></div>
-							</div>
-
 							<div id="promptsList" class="prompts-list">
 								<!-- Populated dynamically via settings.js -->
 							</div>
@@ -203,11 +282,59 @@
 				</main>
 			</div>
 
-			<!-- Footer -->
-			<footer class="window-footer">
-				<button id="cancelBtn" class="btn btn-text">Cancel</button>
-				<button id="saveBtn" class="btn btn-primary">Save Settings</button>
-			</footer>
+		</div>
+
+		<!-- API Provider Modal -->
+		<div id="apiProviderModal" class="modal-overlay">
+			<div class="modal-card api-modal-card">
+				<div class="modal-header">
+					<h3 id="apiModalTitle">Add API Provider</h3>
+					<button id="apiModalCloseBtn" class="modal-close-x">&times;</button>
+				</div>
+				<div class="modal-body">
+					<form id="apiProviderForm" onsubmit="return false;" class="no-drag">
+						<input type="hidden" id="apiProviderId" />
+						<div class="form-field">
+							<label for="apiName">Name <span class="required">*</span></label>
+							<input type="text" id="apiName" class="text-input" placeholder="e.g. OpenAI GPT-4" required />
+							<span class="error-msg" id="apiNameError">This field is required.</span>
+						</div>
+						<div class="form-field">
+							<label for="apiBaseUrl">Base URL <span class="required">*</span></label>
+							<input type="text" id="apiBaseUrl" class="text-input" placeholder="e.g. https://api.openai.com/v1" required />
+							<span class="error-msg" id="apiBaseUrlError">Enter a valid API endpoint URL.</span>
+						</div>
+						<div class="form-field">
+							<label for="apiApiKey">API Key <span class="required">*</span></label>
+							<div class="password-input-wrapper">
+								<input type="password" id="apiApiKey" class="text-input" placeholder="sk-..." required style="padding-right: 36px;" />
+								<button type="button" id="toggleApiKeyVisibility" class="btn-icon-sm no-drag"><i data-lucide="eye"></i></button>
+							</div>
+							<span class="error-msg" id="apiApiKeyError">This field is required.</span>
+						</div>
+						<div class="form-field" style="position: relative;">
+							<label for="apiModel">Model <span class="required">*</span></label>
+							<div class="custom-select-wrapper no-drag" id="apiModelWrapper" style="width: 100%; position: relative; display: flex; align-items: center;">
+								<input type="text" id="apiModel" class="text-input" placeholder="e.g. gpt-4-turbo" required autocomplete="off" style="padding-right: 36px; width: 100%;" />
+								<div class="model-loading-spinner" id="modelLoadingSpinner" style="display: none; position: absolute; right: 10px; pointer-events: none; z-index: 5;">
+									<div class="spinner-sm"></div>
+								</div>
+								<div class="custom-select-options" id="apiModelDropdown" style="max-height: 160px; overflow-y: auto;"></div>
+							</div>
+							<span class="info-msg" id="apiModelInfo" style="font-size: 11px; margin-top: 2px; display: none;"></span>
+							<span class="error-msg" id="apiModelError">This field is required.</span>
+						</div>
+						<div class="form-field">
+							<label for="apiSystemPrompt">System Prompt</label>
+							<textarea id="apiSystemPrompt" class="text-input textarea-input" rows="2" placeholder="Instruction to guide the model's behavior..."></textarea>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button id="apiModalCancelBtn" class="btn btn-secondary">Cancel</button>
+					<button id="apiModalSaveBtn" class="btn btn-primary">Save Provider</button>
+				</div>
+			</div>
 		</div>
 
 		<!-- History Settings Modal -->

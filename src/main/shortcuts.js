@@ -1,6 +1,8 @@
 const { globalShortcut } = require('electron');
-const { toggleWindow } = require('./window');
+const { toggleWindow, toggleApiChatWindow, toggleSettingsWindow } = require('./window');
 const { askAI } = require('./clipboard');
+
+const isWebChat = (id) => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen'].includes(id);
 
 const registerShortcuts = (state) => {
 	globalShortcut.unregisterAll();
@@ -11,9 +13,15 @@ const registerShortcuts = (state) => {
 		try {
 			const success = globalShortcut.register(item.shortcut, () => {
 				if (item.id === 'toggle') {
-					toggleWindow(state);
+					if (isWebChat(state.currentAssistant)) {
+						toggleWindow(state);
+					} else {
+						toggleApiChatWindow(state);
+					}
+				} else if (item.id === 'toggle-promptly') {
+					toggleSettingsWindow(state);
 				} else {
-					askAI(state, item.text, item.autoSubmit);
+					askAI(state, item.text, item.autoSubmit, item.name);
 				}
 			});
 			if (!success) {

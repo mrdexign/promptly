@@ -1,3 +1,4 @@
+// Relaunched to apply custom API providers changes
 const fs = require('fs');
 const path = require('path');
 const { app, BrowserWindow, globalShortcut, nativeTheme } = require('electron');
@@ -30,6 +31,8 @@ if (!app.isPackaged) autoLauncher.disable();
 const state = {
 	win: null,
 	settingsWin: null,
+	apiChatWin: null,
+	apiChatMaximized: false,
 	tray: null,
 	isAnimating: false,
 	updateState: {
@@ -47,7 +50,7 @@ const state = {
 };
 
 const { loadSettings } = require('./settings-store');
-const { createWindow } = require('./window');
+const { createWindow, openApiChatWindow } = require('./window');
 const { createTray } = require('./tray');
 const { registerShortcuts } = require('./shortcuts');
 const { checkForUpdates } = require('./updater');
@@ -55,9 +58,11 @@ const { registerIpcHandlers, setupAutoReload } = require('./ipc');
 
 state.appSettings = loadSettings(state.ASSETS);
 nativeTheme.themeSource = state.appSettings.theme || 'dark';
-state.currentAssistant = state.appSettings.currentAssistant;
 
-registerIpcHandlers(state, { createWindow, createTray, registerShortcuts });
+const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen'].includes(id);
+state.currentAssistant = state.appSettings.currentAssistant || 'Copilot';
+
+registerIpcHandlers(state, { createWindow, createTray, registerShortcuts, openApiChatWindow });
 
 app.whenReady().then(async () => {
 	createWindow(state);

@@ -2,15 +2,18 @@ const fs = require('fs');
 const path = require('path');
 
 const getDefaultPrompts = () => [
+	{ id: 'toggle-promptly', name: 'Toggle Promptly', shortcut: 'Alt+P', text: '', autoSubmit: false, isSystem: true },
 	{ id: 'toggle', name: 'Toggle Window', shortcut: 'Alt+C', text: '', autoSubmit: false, isSystem: true },
-	{ id: 'rephrase', name: 'Rephrase', shortcut: 'Alt+R', text: 'Rephrase', autoSubmit: true },
-	{ id: 'clipboard', name: 'Clipboard (Paste only)', shortcut: 'Alt+M', text: 'Clipboard', autoSubmit: false },
-	{ id: 'task', name: 'Task Title Extractor', shortcut: 'Alt+T', text: 'Extract the task title in one line', autoSubmit: true },
-	{ id: 'grammar', name: 'Grammar Checker', shortcut: 'Alt+G', text: 'Spot grammar mistakes and share the lesson', autoSubmit: true },
-	{ id: 'translate', name: 'Translator', shortcut: 'Alt+L', text: 'Translate to Persian and identify critical vocab', autoSubmit: true }
+	{ id: 'rephrase', name: 'Rephrase', shortcut: 'Alt+R', text: 'Rewrite this more clearly and concisely', autoSubmit: true },
+	{ id: 'clipboard', name: 'Clipboard', shortcut: 'Alt+M', text: 'Paste from clipboard', autoSubmit: false },
+	{ id: 'task', name: 'Task Title', shortcut: 'Alt+T', text: 'Extract a short task title from this text', autoSubmit: true },
+	{ id: 'grammar', name: 'Grammar Fix', shortcut: 'Alt+G', text: 'Fix grammar and spelling errors', autoSubmit: true },
+	{ id: 'translate', name: 'Translate', shortcut: 'Alt+L', text: 'Translate to English', autoSubmit: true },
 ];
 
-const loadSettings = (ASSETS) => {
+const loadSettings = ASSETS => {
+	const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen'].includes(id);
+
 	try {
 		if (fs.existsSync(ASSETS.config)) {
 			const data = JSON.parse(fs.readFileSync(ASSETS.config, 'utf8'));
@@ -19,6 +22,12 @@ const loadSettings = (ASSETS) => {
 				if (data.standardWindow === undefined) data.standardWindow = false;
 				if (data.theme === undefined) data.theme = 'dark';
 				if (data.historyCleanup === undefined) data.historyCleanup = 'daily';
+				if (!data.apiProviders) data.apiProviders = [];
+				// Allow API providers as active, but fallback to Copilot if invalid
+				if (data.currentAssistant && !isWebChat(data.currentAssistant)) {
+					const apiExists = data.apiProviders.some(p => p.id === data.currentAssistant);
+					if (!apiExists) data.currentAssistant = 'Copilot';
+				}
 				return data;
 			}
 		}
@@ -33,6 +42,7 @@ const loadSettings = (ASSETS) => {
 		standardWindow: false,
 		theme: 'dark',
 		historyCleanup: 'daily',
+		apiProviders: [],
 	};
 	try {
 		fs.writeFileSync(ASSETS.config, JSON.stringify(defaults, null, 2));

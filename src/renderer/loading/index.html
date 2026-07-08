@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: transparent;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+        }
+        
+        .loading-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(15, 15, 20, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 8px 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px) saturate(1.2);
+            -webkit-backdrop-filter: blur(20px) saturate(1.2);
+        }
+        
+        .spinner {
+            width: 12px;
+            height: 12px;
+            border: 1.5px solid rgba(255, 255, 255, 0.1);
+            border-top-color: rgba(167, 167, 180, 0.8);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .text-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+        
+        .prompt-title {
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(226, 232, 240, 0.8);
+            letter-spacing: -0.1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 160px;
+        }
+        
+        .model-name {
+            font-size: 10px;
+            font-weight: 400;
+            color: rgba(148, 163, 184, 0.4);
+            white-space: nowrap;
+        }
+        
+        /* Light theme */
+        body.theme-light .loading-container {
+            background: rgba(255, 255, 255, 0.7);
+            border-color: rgba(0, 0, 0, 0.06);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+        
+        body.theme-light .spinner {
+            border-color: rgba(0, 0, 0, 0.08);
+            border-top-color: rgba(79, 70, 229, 0.7);
+        }
+        
+        body.theme-light .prompt-title {
+            color: rgba(30, 41, 59, 0.8);
+        }
+        
+        body.theme-light .model-name {
+            color: rgba(100, 116, 139, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        <div class="spinner"></div>
+        <div class="text-group">
+            <span class="prompt-title" id="promptTitle"></span>
+            <span class="model-name" id="modelName"></span>
+        </div>
+    </div>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const theme = params.get('theme') || 'dark';
+        const model = params.get('model') || '';
+        const title = params.get('title') || '';
+        
+        document.body.classList.add(`theme-${theme}`);
+        
+        const promptTitleEl = document.getElementById('promptTitle');
+        const modelNameEl = document.getElementById('modelName');
+        
+        if (title) {
+            promptTitleEl.textContent = title;
+            promptTitleEl.style.display = 'block';
+        } else {
+            promptTitleEl.style.display = 'none';
+        }
+        
+        if (model) {
+            modelNameEl.textContent = model;
+            modelNameEl.style.display = 'block';
+        } else {
+            modelNameEl.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
