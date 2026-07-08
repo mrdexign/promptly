@@ -5,6 +5,8 @@ const AutoLaunch = require('auto-launch');
 
 if (require('electron-squirrel-startup')) app?.quit();
 
+if (!app.isPackaged) app.setPath('userData', path.join(app.getPath('appData'), 'promptly-dev'));
+
 const ROOT = path.join(__dirname, '..', '..');
 
 const ASSETS = {
