@@ -1,6 +1,6 @@
 {
 	"name": "promptly",
-	"version": "1.6.0",
+	"version": "1.7.0",
 	"description": "An Electron app to quickly access ai services.",
 	"main": "src/main/index.js",
 	"scripts": {

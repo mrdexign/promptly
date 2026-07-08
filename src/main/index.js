@@ -16,18 +16,7 @@ const ASSETS = {
 	history: path.join(app.getPath('userData'), 'assistant-history.json'),
 };
 
-const URLS = {
-	Copilot: 'https://copilot.microsoft.com',
-	Arena: 'https://arena.ai/text/direct',
-	Gemini: 'https://gemini.google.com',
-	Perplexity: 'https://perplexity.ai',
-	Monica: 'https://monica.im/home',
-	Qwen: 'https://chat.qwen.ai',
-	DeepSeek: 'https://chat.deepseek.com',
-	MiniMax: 'https://agent.minimax.io',
-	Claude: 'https://claude.ai/chat',
-	Kimi: 'https://www.kimi.com',
-};
+const { URLS, isWebChat } = require('./providers-config');
 
 const autoLauncher = new AutoLaunch({ name: 'Promptly', path: app.getPath('exe') });
 if (!app.isPackaged) autoLauncher.disable();
@@ -63,7 +52,6 @@ const { registerIpcHandlers, setupAutoReload } = require('./ipc');
 state.appSettings = loadSettings(state.ASSETS);
 nativeTheme.themeSource = state.appSettings.theme || 'dark';
 
-const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
 state.currentAssistant = state.appSettings.currentAssistant || 'Copilot';
 
 registerIpcHandlers(state, { createWindow, createTray, registerShortcuts, openApiChatWindow });

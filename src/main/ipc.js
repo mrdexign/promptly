@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { app, ipcMain, nativeTheme, shell, BrowserWindow } = require('electron');
 const { getDefaultPrompts, saveSettingsToFile } = require('./settings-store');
+const { isWebChat } = require('./providers-config');
 const { loadHistory, saveHistory } = require('./history');
 const { isNewerVersion, startUpdate } = require('./updater');
 
@@ -39,7 +40,7 @@ const registerIpcHandlers = (state, deps) => {
 
 		if (state.win && state.currentAssistant !== newSettings.currentAssistant) {
 			state.currentAssistant = newSettings.currentAssistant;
-			const isWebChat = (id) => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
+
 			if (isWebChat(state.currentAssistant)) {
 				state.win.loadURL(state.URLS[state.currentAssistant] || state.URLS.Copilot);
 			} else {
@@ -83,6 +84,9 @@ const registerIpcHandlers = (state, deps) => {
 
 	ipcMain.handle('get-app-version', () => app.getVersion());
 	ipcMain.handle('get-default-prompts', () => getDefaultPrompts());
+	ipcMain.handle('get-webchat-providers', () => {
+		return require('./providers-config').providers;
+	});
 
 	ipcMain.handle('get-history', () => loadHistory(state));
 

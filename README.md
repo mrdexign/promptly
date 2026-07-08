@@ -1,7 +1,7 @@
 # ⚡ Promptly
 
 <p align="center">
-  <img src="icons/Logo.png" alt="Promptly Logo" width="128" />
+  <img src="assets/icons/Logo.png" alt="Promptly Logo" width="128" />
 </p>
 
 ### A utility for toggling AI services.

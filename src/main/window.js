@@ -1,6 +1,7 @@
 const path = require('path');
 const { app, BrowserWindow, screen } = require('electron');
 const { registerContextMenu } = require('./context-menu');
+const { isWebChat } = require('./providers-config');
 
 const ROOT = path.join(__dirname, '..', '..');
 
@@ -31,7 +32,7 @@ const createWindow = state => {
 	}
 	registerContextMenu(state.win);
 
-	const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
+
 	if (isWebChat(state.currentAssistant)) {
 		state.win.loadURL(state.URLS[state.currentAssistant] || state.URLS.Copilot);
 	} else {

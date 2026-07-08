@@ -5,10 +5,11 @@ const { exec } = require('child_process');
 const execAsync = util.promisify(exec);
 const { addHistoryItem } = require('./history');
 const { toggleWindow } = require('./window');
+const { isWebChat } = require('./providers-config');
 
 const ROOT = path.join(__dirname, '..', '..');
 
-const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
+
 
 let loadingWindow = null;
 

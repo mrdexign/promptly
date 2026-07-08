@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+	getWebChatProviders: () => ipcRenderer.invoke('get-webchat-providers'),
 	getSettings: () => ipcRenderer.invoke('get-settings'),
 	saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
 	closeSettings: () => ipcRenderer.send('close-settings'),

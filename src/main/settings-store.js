@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { isWebChat } = require('./providers-config');
 
 const getDefaultPrompts = () => [
 	{ id: 'toggle-promptly', name: 'Toggle Promptly', shortcut: 'Alt+P', text: '', autoSubmit: false, isSystem: true },
@@ -18,8 +19,7 @@ const getDefaultPrompts = () => [
 ];
 
 const loadSettings = ASSETS => {
-	const isWebChat = id =>
-		['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
+
 
 	try {
 		if (fs.existsSync(ASSETS.config)) {

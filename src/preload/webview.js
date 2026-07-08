@@ -1,64 +1,19 @@
 const { ipcRenderer } = require('electron');
 
-const CONFIG = {
-	'copilot.microsoft.com': {
-		input: ['#userInput', '.input-area textarea', 'textarea[id*="searchbox"]'],
-		submit: ['button[aria-label="Submit message"]', '.send-button'],
-		method: 'react-props',
-	},
-	'gemini.google.com': {
-		input: ['.ql-editor', 'div[role="textbox"]'],
-		submit: ['button[aria-label*="Send"]', '.send-button'],
-		method: 'rich-text',
-	},
-	'perplexity.ai': {
-		input: ['#ask-input', 'textarea[placeholder*="Ask"]', 'textarea[placeholder*="anything"]', 'textarea', '[contenteditable="true"]'],
-		submit: ['button[aria-label*="Submit"]', 'button[aria-label*="Send"]', 'button[class*="submit"]', 'button:has(svg)'],
-		method: 'paste-event',
-	},
-	'monica.im': {
-		input: ['textarea', 'div[contenteditable="true"]'],
-		submit: ['button[aria-label*="Send"]', 'button[aria-label*="Submit"]', 'button[class*="send"]'],
-		method: 'react-props',
-	},
-	'arena.ai': {
-		input: ['textarea[name="message"]', 'textarea[placeholder*="Ask"]', 'textarea'],
-		submit: ['button[type="submit"]', 'button[aria-label*="Send"]', 'button[class*="send"]', 'button:has(svg)'],
-		method: 'react-props',
-	},
-	'qwen.ai': {
-		input: ['textarea.message-input-textarea', '.message-input-textarea', 'textarea'],
-		submit: ['.message-input-right-button button', '.message-input-right-button > *', '.message-input-right-button'],
-		method: 'react-props',
-	},
-	'deepseek.com': {
-		input: ['textarea[placeholder*="DeepSeek"]', 'textarea[name="search"]', 'textarea'],
-		submit: ['button[aria-label*="Send"]', 'div[class*="send"]', 'button[class*="send"]', 'div[class*="Send"]', 'button[class*="Send"]'],
-		method: 'react-props',
-	},
-	'minimax.io': {
-		input: ['div[data-testid="message-textarea"]', 'div[contenteditable="true"]', 'textarea'],
-		submit: ['[data-testid*="send"]', '[data-testid*="submit"]', 'button[data-testid*="send"]', 'button[class*="send"]', 'button:has(svg)', 'button', 'div[role="button"]'],
-		method: 'rich-text',
-	},
-	'claude.ai': {
-		input: ['div[data-testid="chat-input"]', 'div[aria-label*="Claude"]', 'div[contenteditable="true"]', 'textarea'],
-		submit: ['button[aria-label*="Send"]', 'button[data-testid*="send"]', 'button:has(svg)', 'button'],
-		method: 'rich-text',
-	},
-	'kimi.com': {
-		input: ['.chat-input-editor', '[data-lexical-editor="true"]', 'div[contenteditable="true"]', 'textarea'],
-		submit: [
-			'.chat-input button[aria-label*="发送"]',
-			'.chat-input button[aria-label*="Send"]',
-			'button[aria-label*="发送"]',
-			'button[aria-label*="Send"]',
-			'.chat-input button',
-			'.chat-input [class*="send"]',
-			'[class*="send-btn"]'
-		],
-		method: 'paste-event',
-	},
+let CONFIG = null;
+
+const ensureConfig = async () => {
+	if (!CONFIG) {
+		CONFIG = {};
+		try {
+			const providers = await ipcRenderer.invoke('get-webchat-providers');
+			providers.forEach(p => {
+				CONFIG[p.domain] = p.webview;
+			});
+		} catch (err) {
+			console.error('Failed to load webchat providers configuration:', err);
+		}
+	}
 };
 
 const getElement = selectors => {
@@ -114,7 +69,8 @@ const pasteInsert = (element, value) => {
 	element.dispatchEvent(event);
 };
 
-ipcRenderer.on('ask-ai', (_, { text, submit }) => {
+ipcRenderer.on('ask-ai', async (_, { text, submit }) => {
+	await ensureConfig();
 	const host = window.location.hostname;
 	let settings = null;
 	for (const key of Object.keys(CONFIG)) {

@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { Tray, Menu, app } = require('electron');
 const { createSettingsWindow } = require('./window');
+const { isWebChat } = require('./providers-config');
 
 const createTray = async state => {
 	if (!state.tray) {
@@ -10,7 +11,7 @@ const createTray = async state => {
 
 	const menuTemplate = [{ label: `⚡ Promptly v${app.getVersion()}`, click: () => require('./window').toggleWindow(state) }];
 
-	const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
+
 
 	const webChatItems = Object.keys(state.URLS).map(name => ({
 		label: name,

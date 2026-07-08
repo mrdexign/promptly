@@ -1,8 +1,9 @@
 const { globalShortcut } = require('electron');
 const { toggleWindow, toggleApiChatWindow, toggleSettingsWindow } = require('./window');
 const { askAI } = require('./clipboard');
+const { isWebChat } = require('./providers-config');
 
-const isWebChat = (id) => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
+
 
 const registerShortcuts = (state) => {
 	globalShortcut.unregisterAll();

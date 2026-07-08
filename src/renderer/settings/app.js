@@ -1,4 +1,62 @@
 document.addEventListener('DOMContentLoaded', async () => {
+	let webchatProviders = [];
+
+	const renderWebChatOptions = () => {
+
+		// 1. Populate General Tab provider selector dropdown
+		const webChatsGroup = document.getElementById('webChatsGroup');
+		if (webChatsGroup) {
+			const label = webChatsGroup.querySelector('.provider-select-group-label');
+			webChatsGroup.innerHTML = '';
+			if (label) webChatsGroup.appendChild(label);
+
+			webchatProviders.forEach(p => {
+				const opt = document.createElement('div');
+				opt.className = 'provider-select-option';
+				opt.dataset.value = p.id;
+				opt.dataset.type = 'webchat';
+				opt.innerHTML = `
+					<span class="provider-option-icon">${p.icon || '🌐'}</span>
+					<span>${p.name}</span>
+				`;
+				opt.addEventListener('click', (e) => {
+					e.stopPropagation();
+					activeAssistantId = p.id;
+					rebuildAllSelects();
+					renderApiProvidersList();
+					updateProvidersTabActiveState();
+					updateProviderSelector();
+					providerSelectWrapper.classList.remove('active');
+					autoSave();
+				});
+				webChatsGroup.appendChild(opt);
+			});
+		}
+
+		// 2. Populate Providers Tab custom select and native select options
+		const webChatSelectOptions = document.getElementById('webChatSelectOptions');
+		const webChatSelect = document.getElementById('webChatSelect');
+
+		if (webChatSelectOptions && webChatSelect) {
+			webChatSelectOptions.innerHTML = '';
+			webChatSelect.innerHTML = '';
+
+			webchatProviders.forEach(p => {
+				const opt = document.createElement('div');
+				opt.className = 'custom-select-option';
+				opt.dataset.value = p.id;
+				opt.textContent = p.name;
+				webChatSelectOptions.appendChild(opt);
+
+				const nativeOpt = document.createElement('option');
+				nativeOpt.value = p.id;
+				nativeOpt.textContent = p.name;
+				webChatSelect.appendChild(nativeOpt);
+			});
+		}
+	};
+
+	renderWebChatOptions();
 	lucide.createIcons();
 	const generalTab = document.getElementById('generalTab');
 	const promptsTab = document.getElementById('promptsTab');
@@ -223,7 +281,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}
 
 	// --- Providers and APIs Helper Functions ---
-	const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
+	const isWebChat = id => webchatProviders.some(p => p.id === id);
 
 	const updateProvidersTabActiveState = () => {
 		const webChatsGroup = document.querySelector('.providers-group');
@@ -732,6 +790,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	// --- Load Current Settings ---
 	try {
+		webchatProviders = await window.api.getWebChatProviders();
+		renderWebChatOptions();
+
 		const settings = await window.api.getSettings();
 		activeAssistantId = settings.currentAssistant || 'Copilot';
 		activeApiProviders = settings.apiProviders || [];
@@ -800,19 +861,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			});
 		}
 
-		// Web Chat options in provider selector
-		providerSelectDropdown.querySelectorAll('.provider-select-option[data-type="webchat"]').forEach(opt => {
-			opt.addEventListener('click', (e) => {
-				e.stopPropagation();
-				activeAssistantId = opt.dataset.value;
-				rebuildAllSelects();
-				renderApiProvidersList();
-				updateProvidersTabActiveState();
-				updateProviderSelector();
-				providerSelectWrapper.classList.remove('active');
-				autoSave();
-			});
-		});
+
 
 		// Close provider dropdown on outside click
 		document.addEventListener('click', () => {
