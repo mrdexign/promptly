@@ -31,7 +31,7 @@ const createWindow = state => {
 	}
 	registerContextMenu(state.win);
 
-	const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen'].includes(id);
+	const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
 	if (isWebChat(state.currentAssistant)) {
 		state.win.loadURL(state.URLS[state.currentAssistant] || state.URLS.Copilot);
 	} else {

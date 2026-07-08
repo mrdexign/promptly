@@ -23,6 +23,10 @@ const URLS = {
 	Perplexity: 'https://perplexity.ai',
 	Monica: 'https://monica.im/home',
 	Qwen: 'https://chat.qwen.ai',
+	DeepSeek: 'https://chat.deepseek.com',
+	MiniMax: 'https://agent.minimax.io',
+	Claude: 'https://claude.ai/chat',
+	Kimi: 'https://www.kimi.com',
 };
 
 const autoLauncher = new AutoLaunch({ name: 'Promptly', path: app.getPath('exe') });
@@ -59,7 +63,7 @@ const { registerIpcHandlers, setupAutoReload } = require('./ipc');
 state.appSettings = loadSettings(state.ASSETS);
 nativeTheme.themeSource = state.appSettings.theme || 'dark';
 
-const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen'].includes(id);
+const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
 state.currentAssistant = state.appSettings.currentAssistant || 'Copilot';
 
 registerIpcHandlers(state, { createWindow, createTray, registerShortcuts, openApiChatWindow });

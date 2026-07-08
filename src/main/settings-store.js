@@ -4,15 +4,22 @@ const path = require('path');
 const getDefaultPrompts = () => [
 	{ id: 'toggle-promptly', name: 'Toggle Promptly', shortcut: 'Alt+P', text: '', autoSubmit: false, isSystem: true },
 	{ id: 'toggle', name: 'Toggle Window', shortcut: 'Alt+C', text: '', autoSubmit: false, isSystem: true },
-	{ id: 'rephrase', name: 'Rephrase', shortcut: 'Alt+R', text: 'Rewrite this more clearly and concisely', autoSubmit: true },
-	{ id: 'clipboard', name: 'Clipboard', shortcut: 'Alt+M', text: 'Paste from clipboard', autoSubmit: false },
-	{ id: 'task', name: 'Task Title', shortcut: 'Alt+T', text: 'Extract a short task title from this text', autoSubmit: true },
-	{ id: 'grammar', name: 'Grammar Fix', shortcut: 'Alt+G', text: 'Fix grammar and spelling errors', autoSubmit: true },
+	{ id: 'rephrase', name: 'Rephrase', shortcut: 'Alt+R', text: 'Rephrase this more clearly and concisely', autoSubmit: true },
+	{ id: 'task', name: 'Task Title', shortcut: 'Alt+T', text: 'Extract a one-line task title from this text', autoSubmit: true },
 	{ id: 'translate', name: 'Translate', shortcut: 'Alt+L', text: 'Translate to English', autoSubmit: true },
+	{
+		id: 'grammar',
+		name: 'Grammar Fix',
+		shortcut: 'Alt+G',
+		text: 'Correct the grammar and explain each rule',
+		autoSubmit: true,
+	},
+	{ id: 'paste', name: 'Paste from Clipboard', shortcut: 'Alt+M', text: '', autoSubmit: false },
 ];
 
 const loadSettings = ASSETS => {
-	const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen'].includes(id);
+	const isWebChat = id =>
+		['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
 
 	try {
 		if (fs.existsSync(ASSETS.config)) {

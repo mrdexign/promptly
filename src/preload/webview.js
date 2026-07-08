@@ -31,6 +31,34 @@ const CONFIG = {
 		submit: ['.message-input-right-button button', '.message-input-right-button > *', '.message-input-right-button'],
 		method: 'react-props',
 	},
+	'deepseek.com': {
+		input: ['textarea[placeholder*="DeepSeek"]', 'textarea[name="search"]', 'textarea'],
+		submit: ['button[aria-label*="Send"]', 'div[class*="send"]', 'button[class*="send"]', 'div[class*="Send"]', 'button[class*="Send"]'],
+		method: 'react-props',
+	},
+	'minimax.io': {
+		input: ['div[data-testid="message-textarea"]', 'div[contenteditable="true"]', 'textarea'],
+		submit: ['[data-testid*="send"]', '[data-testid*="submit"]', 'button[data-testid*="send"]', 'button[class*="send"]', 'button:has(svg)', 'button', 'div[role="button"]'],
+		method: 'rich-text',
+	},
+	'claude.ai': {
+		input: ['div[data-testid="chat-input"]', 'div[aria-label*="Claude"]', 'div[contenteditable="true"]', 'textarea'],
+		submit: ['button[aria-label*="Send"]', 'button[data-testid*="send"]', 'button:has(svg)', 'button'],
+		method: 'rich-text',
+	},
+	'kimi.com': {
+		input: ['.chat-input-editor', '[data-lexical-editor="true"]', 'div[contenteditable="true"]', 'textarea'],
+		submit: [
+			'.chat-input button[aria-label*="发送"]',
+			'.chat-input button[aria-label*="Send"]',
+			'button[aria-label*="发送"]',
+			'button[aria-label*="Send"]',
+			'.chat-input button',
+			'.chat-input [class*="send"]',
+			'[class*="send-btn"]'
+		],
+		method: 'paste-event',
+	},
 };
 
 const getElement = selectors => {
@@ -116,7 +144,14 @@ ipcRenderer.on('ask-ai', (_, { text, submit }) => {
 			if (btn) {
 				btn.click();
 			} else {
-				inputEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+				inputEl.dispatchEvent(new KeyboardEvent('keydown', {
+					key: 'Enter',
+					code: 'Enter',
+					keyCode: 13,
+					which: 13,
+					bubbles: true,
+					cancelable: true
+				}));
 			}
 		}, 300);
 	}

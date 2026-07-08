@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}
 
 	// --- Providers and APIs Helper Functions ---
-	const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen'].includes(id);
+	const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
 
 	const updateProvidersTabActiveState = () => {
 		const webChatsGroup = document.querySelector('.providers-group');

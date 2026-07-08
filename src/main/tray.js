@@ -10,7 +10,7 @@ const createTray = async state => {
 
 	const menuTemplate = [{ label: `⚡ Promptly v${app.getVersion()}`, click: () => require('./window').toggleWindow(state) }];
 
-	const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen'].includes(id);
+	const isWebChat = id => ['Copilot', 'Arena', 'Gemini', 'Perplexity', 'Monica', 'Qwen', 'DeepSeek', 'MiniMax', 'Claude', 'Kimi'].includes(id);
 
 	const webChatItems = Object.keys(state.URLS).map(name => ({
 		label: name,
