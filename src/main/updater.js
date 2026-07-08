@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { app, dialog, BrowserWindow, shell } = require('electron');
+const { app, dialog, BrowserWindow, shell, session } = require('electron');
 
 const ROOT = path.join(__dirname, '..', '..');
 
@@ -215,7 +215,15 @@ const startUpdate = async (state) => {
 			title: 'Promptly Update',
 			message: 'Download complete!',
 			detail: 'Promptly will now restart to complete the installation.'
-		}).then(() => {
+		}).then(async () => {
+			if (session && session.defaultSession) {
+				try {
+					await session.defaultSession.flushStorageData();
+				} catch (err) {
+					console.error('Failed to flush storage data before update restart:', err);
+				}
+			}
+
 			const { spawn } = require('child_process');
 			const child = spawn(tempFilePath, [], {
 				detached: true,
