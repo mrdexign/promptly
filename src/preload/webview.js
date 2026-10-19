@@ -8,7 +8,12 @@ const ensureConfig = async () => {
 		try {
 			const providers = await ipcRenderer.invoke('get-webchat-providers');
 			providers.forEach(p => {
-				CONFIG[p.domain] = p.webview;
+				if (p.domain) CONFIG[p.domain] = p.webview;
+				if (Array.isArray(p.domains)) {
+					p.domains.forEach(d => {
+						CONFIG[d] = p.webview;
+					});
+				}
 			});
 		} catch (err) {
 			console.error('Failed to load webchat providers configuration:', err);
@@ -44,11 +49,14 @@ const focusAndSelect = element => {
 const reactInsert = (element, value) => {
 	const descriptor = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value');
 	const nativeSetter = descriptor?.set;
-	if (nativeSetter) {
+	if (nativeSetter && (element instanceof window.HTMLTextAreaElement || element.tagName === 'TEXTAREA')) {
 		nativeSetter.call(element, value);
 		element.dispatchEvent(new Event('input', { bubbles: true }));
-	} else {
+	} else if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
 		element.value = value;
+		element.dispatchEvent(new Event('input', { bubbles: true }));
+	} else {
+		richTextInsert(value);
 	}
 };
 

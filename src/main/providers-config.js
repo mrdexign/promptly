@@ -1,5 +1,33 @@
 const providers = [
 	{
+		id: 'ChatGPT',
+		name: 'ChatGPT',
+		url: 'https://chatgpt.com',
+		domain: 'chatgpt.com',
+		domains: ['chatgpt.com', 'openai.com'],
+		icon: '🌐',
+		webview: {
+			input: [
+				'#prompt-textarea',
+				'div#prompt-textarea',
+				'div.ProseMirror[contenteditable="true"]',
+				'div[contenteditable="true"]',
+				'textarea#prompt-textarea',
+				'textarea[placeholder*="Ask"]',
+				'textarea',
+			],
+			submit: [
+				'button[data-testid="send-button"]',
+				'button[data-testid="composer-submit-button"]',
+				'button[aria-label*="Send"]',
+				'button[aria-label*="send"]',
+				'button:has(svg)',
+				'button',
+			],
+			method: 'rich-text',
+		},
+	},
+	{
 		id: 'Claude',
 		name: 'Claude',
 		url: 'https://claude.ai/chat',
@@ -50,6 +78,31 @@ const providers = [
 		webview: {
 			input: ['#userInput', '.input-area textarea', 'textarea[id*="searchbox"]'],
 			submit: ['button[aria-label="Submit message"]', '.send-button'],
+			method: 'react-props',
+		},
+	},
+	{
+		id: 'Duck.ai',
+		name: 'Duck.ai',
+		url: 'https://duck.ai',
+		domain: 'duck.ai',
+		domains: ['duck.ai', 'duckduckgo.com'],
+		icon: '🌐',
+		webview: {
+			input: [
+				'textarea[placeholder*="Ask"]',
+				'textarea[name="message"]',
+				'textarea[aria-label*="chat"]',
+				'textarea',
+				'div[contenteditable="true"]',
+			],
+			submit: [
+				'button[type="submit"]',
+				'button[aria-label*="Send"]',
+				'button[aria-label*="Submit"]',
+				'button:has(svg)',
+				'button',
+			],
 			method: 'react-props',
 		},
 	},
