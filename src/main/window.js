@@ -135,7 +135,7 @@ const openApiChatWindow = (state) => {
 const ensureCopilotLoaded = (state, retries = 0) => {
 	if (!state.win || retries > 10) return;
 	state.win.webContents
-		.executeJavaScript(`!!document.getElementById('userInput')`)
+		.executeJavaScript(`!!document.querySelector('#m365-chat-editor-target-element, #userInput')`)
 		.then(loaded => {
 			if (!loaded) {
 				console.log(`Waiting for Copilot... (${retries})`);

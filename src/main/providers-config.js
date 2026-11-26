@@ -72,13 +72,14 @@ const providers = [
 	{
 		id: 'Copilot',
 		name: 'Copilot',
-		url: 'https://copilot.microsoft.com',
-		domain: 'copilot.microsoft.com',
+		url: 'https://copilot.cloud.microsoft/',
+		domain: 'copilot.cloud.microsoft',
+		domains: ['copilot.cloud.microsoft', 'copilot.com', 'copilot.microsoft.com'],
 		icon: '🌐',
 		webview: {
-			input: ['#userInput', '.input-area textarea', 'textarea[id*="searchbox"]'],
+			input: ['#m365-chat-editor-target-element', '[contenteditable="true"][aria-label*="Copilot"]'],
 			submit: ['button[aria-label="Submit message"]', '.send-button'],
-			method: 'react-props',
+			method: 'rich-text',
 		},
 	},
 	{
@@ -195,8 +196,8 @@ const providers = [
 		domain: 'arena.ai',
 		icon: '🌐',
 		webview: {
-			input: ['textarea[name="message"]', 'textarea[placeholder*="Ask"]', 'textarea'],
-			submit: ['button[type="submit"]', 'button[aria-label*="Send"]', 'button[class*="send"]', 'button:has(svg)'],
+			input: ['div.ProseMirror[contenteditable="true"]', '.tiptap[contenteditable="true"]'],
+			submit: ['button[aria-label="Send message"]', 'button[type="submit"]'],
 			method: 'react-props',
 		},
 	},
