@@ -92,18 +92,12 @@ const providers = [
 		webview: {
 			input: [
 				'textarea[placeholder*="Ask"]',
+				'textarea[placeholder*="Reply"]',
 				'textarea[name="message"]',
 				'textarea[aria-label*="chat"]',
 				'textarea',
-				'div[contenteditable="true"]',
 			],
-			submit: [
-				'button[type="submit"]',
-				'button[aria-label*="Send"]',
-				'button[aria-label*="Submit"]',
-				'button:has(svg)',
-				'button',
-			],
+			submit: ['button[type="submit"]', 'button[aria-label*="Send"]'],
 			method: 'react-props',
 		},
 	},

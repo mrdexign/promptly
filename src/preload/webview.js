@@ -65,6 +65,36 @@ const richTextInsert = value => {
 	document.execCommand('insertText', false, value);
 };
 
+const pressEnter = element => {
+	element.dispatchEvent(new KeyboardEvent('keydown', {
+		key: 'Enter',
+		code: 'Enter',
+		keyCode: 13,
+		which: 13,
+		bubbles: true,
+		cancelable: true
+	}));
+};
+
+// shortcut: waits up to 60s for a disabled Send button (Duck.ai disables it while answering); raise the cap if sites stream longer
+let submitToken = 0;
+
+const submitPrompt = (token, settings, inputEl, text, attempt = 0) => {
+	if (token !== submitToken) return;
+	const btn = getElement(settings.submit);
+	if (!btn) return pressEnter(inputEl);
+	if (btn.disabled) {
+		if (attempt < 120) setTimeout(() => submitPrompt(token, settings, inputEl, text, attempt + 1), 500);
+		return;
+	}
+	// a delayed click only fires for the text that is still in the composer
+	if (attempt) {
+		const strip = value => String(value ?? '').replace(/[\u200b-\u200d\ufeff]/g, '').trim();
+		if (strip(inputEl.value ?? inputEl.textContent) !== strip(text)) return;
+	}
+	btn.click();
+};
+
 const pasteInsert = (element, value) => {
 	document.execCommand('selectAll', false, null);
 	const dataTransfer = new DataTransfer();
@@ -103,20 +133,7 @@ ipcRenderer.on('ask-ai', async (_, { text, submit }) => {
 	}
 
 	if (submit) {
-		setTimeout(() => {
-			const btn = getElement(settings.submit);
-			if (btn) {
-				btn.click();
-			} else {
-				inputEl.dispatchEvent(new KeyboardEvent('keydown', {
-					key: 'Enter',
-					code: 'Enter',
-					keyCode: 13,
-					which: 13,
-					bubbles: true,
-					cancelable: true
-				}));
-			}
-		}, 300);
+		const token = ++submitToken;
+		setTimeout(() => submitPrompt(token, settings, inputEl, text), 300);
 	}
 });
