@@ -23,6 +23,7 @@ const createWindow = state => {
 		webPreferences: {
 			nodeIntegration: false,
 			contextIsolation: true,
+			backgroundThrottling: false,
 			preload: path.join(ROOT, 'src', 'preload', 'webview.js'),
 		},
 	});

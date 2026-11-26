@@ -11,82 +11,134 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
+        html, body {
+            height: 100%;
+        }
+
         body {
             background: transparent;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             overflow: hidden;
+            padding: 12px;
         }
-        
+
         .loading-container {
+            position: relative;
             display: flex;
             align-items: center;
-            gap: 10px;
-            background: rgba(15, 15, 20, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            padding: 8px 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(20px) saturate(1.2);
-            -webkit-backdrop-filter: blur(20px) saturate(1.2);
+            gap: 11px;
+            height: 100%;
+            padding: 0 15px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            background:
+                radial-gradient(120% 180% at 0% 0%, rgba(139, 92, 246, 0.1), transparent 55%),
+                linear-gradient(150deg, rgba(12, 12, 12, 0.96), rgba(0, 0, 0, 0.94));
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(18px) saturate(1.4);
+            -webkit-backdrop-filter: blur(18px) saturate(1.4);
+            overflow: hidden;
         }
-        
+
+        /* slow moving highlight across the glass */
+        .loading-container::after {
+            content: '';
+            position: absolute;
+            top: -60%;
+            left: -55%;
+            width: 45%;
+            height: 220%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09), transparent);
+            transform: rotate(16deg);
+            animation: sheen 2.6s ease-in-out infinite;
+            pointer-events: none;
+        }
+
         .spinner {
-            width: 12px;
-            height: 12px;
-            border: 1.5px solid rgba(255, 255, 255, 0.1);
-            border-top-color: rgba(167, 167, 180, 0.8);
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
+            position: relative;
+            width: 22px;
+            height: 22px;
             flex-shrink: 0;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, rgba(139, 92, 246, 0) 0 42%, rgba(167, 139, 250, 0.75) 78%, #e9e2ff 100%);
+            -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.9px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.9px));
+            animation: spin 0.9s linear infinite;
+            filter: drop-shadow(0 0 7px rgba(139, 92, 246, 0.5));
         }
-        
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        
+
+        @keyframes sheen {
+            0% { left: -55%; }
+            55%, 100% { left: 125%; }
+        }
+
         .text-group {
             display: flex;
             flex-direction: column;
-            gap: 1px;
+            gap: 2px;
+            min-width: 0;
         }
-        
+
         .prompt-title {
-            font-size: 11px;
-            font-weight: 500;
-            color: rgba(226, 232, 240, 0.8);
-            letter-spacing: -0.1px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: -0.15px;
+            color: rgba(236, 239, 248, 0.92);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 160px;
+            max-width: 158px;
         }
-        
+
         .model-name {
+            display: flex;
+            align-items: center;
+            gap: 5px;
             font-size: 10px;
-            font-weight: 400;
-            color: rgba(148, 163, 184, 0.4);
+            font-weight: 500;
+            letter-spacing: 0.25px;
+            color: rgba(160, 166, 190, 0.62);
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        
-        /* Light theme */
-        body.theme-light .loading-container {
-            background: rgba(255, 255, 255, 0.7);
-            border-color: rgba(0, 0, 0, 0.06);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+        .model-name::before {
+            content: '';
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #a78bfa;
+            box-shadow: 0 0 6px rgba(167, 139, 250, 0.8);
+            animation: pulse 1.5s ease-in-out infinite;
+            flex-shrink: 0;
         }
-        
-        body.theme-light .spinner {
-            border-color: rgba(0, 0, 0, 0.08);
-            border-top-color: rgba(79, 70, 229, 0.7);
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.35; transform: scale(0.85); }
+            50% { opacity: 1; transform: scale(1); }
         }
-        
-        body.theme-light .prompt-title {
-            color: rgba(30, 41, 59, 0.8);
+
+        /* Fallback for a short host window (older shell), so the text never clips */
+        @media (max-height: 56px) {
+            body { padding: 2px; }
+            .loading-container { padding: 0 10px; gap: 8px; border-radius: 10px; }
+            .spinner { width: 14px; height: 14px; }
+            .prompt-title { font-size: 11px; max-width: 150px; }
+            .model-name { font-size: 9px; gap: 1px; }
         }
-        
-        body.theme-light .model-name {
-            color: rgba(100, 116, 139, 0.4);
+
+        @media (prefers-reduced-motion: reduce) {
+            .spinner,
+            .loading-container::after,
+            .model-name::before {
+                animation: none;
+            }
         }
     </style>
 </head>
@@ -103,19 +155,19 @@
         const theme = params.get('theme') || 'dark';
         const model = params.get('model') || '';
         const title = params.get('title') || '';
-        
+
         document.body.classList.add(`theme-${theme}`);
-        
+
         const promptTitleEl = document.getElementById('promptTitle');
         const modelNameEl = document.getElementById('modelName');
-        
+
         if (title) {
             promptTitleEl.textContent = title;
             promptTitleEl.style.display = 'block';
         } else {
             promptTitleEl.style.display = 'none';
         }
-        
+
         if (model) {
             modelNameEl.textContent = model;
             modelNameEl.style.display = 'block';

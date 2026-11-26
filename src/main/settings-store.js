@@ -27,6 +27,7 @@ const loadSettings = ASSETS => {
 			if (data && typeof data === 'object') {
 				if (!data.prompts) data.prompts = getDefaultPrompts();
 				if (data.standardWindow === undefined) data.standardWindow = false;
+				if (data.webChatAutoPaste === undefined) data.webChatAutoPaste = false;
 				if (data.theme === undefined) data.theme = 'dark';
 				if (data.historyCleanup === undefined) data.historyCleanup = 'daily';
 				if (!data.apiProviders) data.apiProviders = [];
@@ -47,6 +48,7 @@ const loadSettings = ASSETS => {
 		autoLaunch: false,
 		prompts: getDefaultPrompts(),
 		standardWindow: false,
+		webChatAutoPaste: false,
 		theme: 'dark',
 		historyCleanup: 'daily',
 		apiProviders: [],

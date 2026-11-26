@@ -80,6 +80,10 @@ const providers = [
 			input: ['#m365-chat-editor-target-element', '[contenteditable="true"][aria-label*="Copilot"]'],
 			submit: ['button[aria-label="Submit message"]', '.send-button'],
 			method: 'rich-text',
+			capture: {
+				busy: ['button[aria-label="Stop generating"]'],
+				answer: { from: ['div.fai-CopilotMessage[role="article"]'], climb: 0 },
+			},
 		},
 	},
 	{
@@ -99,6 +103,10 @@ const providers = [
 			],
 			submit: ['button[type="submit"]', 'button[aria-label*="Send"]'],
 			method: 'react-props',
+			capture: {
+				busy: ['button[aria-label="Stop generating"]'],
+				answer: { from: ['[data-activeresponse="true"] > div:has(+ div button[aria-label="Copy to clipboard"])'], climb: 0 },
+			},
 		},
 	},
 	{
@@ -129,14 +137,12 @@ const providers = [
 		icon: '🌐',
 		webview: {
 			input: ['textarea[placeholder*="DeepSeek"]', 'textarea[name="search"]', 'textarea'],
-			submit: [
-				'button[aria-label*="Send"]',
-				'div[class*="send"]',
-				'button[class*="send"]',
-				'div[class*="Send"]',
-				'button[class*="Send"]',
-			],
+			submit: ['div.ds-button--primary.ds-button--circle'],
 			method: 'react-props',
+			capture: {
+				busy: ['div.ds-button--primary.ds-button--circle:has(path[d^="M34,18"])'],
+				answer: { from: ['div.ds-markdown.ds-assistant-message-main-content'], climb: 0 },
+			},
 		},
 	},
 	{
@@ -204,4 +210,6 @@ providers.forEach(p => {
 
 const isWebChat = id => providers.some(p => p.id === id);
 
-module.exports = { providers, URLS, isWebChat };
+const getProvider = id => providers.find(p => p.id === id);
+
+module.exports = { providers, URLS, isWebChat, getProvider };

@@ -83,6 +83,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const webChatBox = document.getElementById('webChatBox');
 	const webChatSelect = document.getElementById('webChatSelect');
 	const webChatStatus = document.getElementById('webChatStatus');
+	const webChatAutoPasteCheckbox = document.getElementById('webChatAutoPaste');
+	const webChatAutoPasteBox = document.getElementById('webChatAutoPasteBox');
 	const apiProvidersList = document.getElementById('apiProvidersList');
 	const addApiProviderBtn = document.getElementById('addApiProviderBtn');
 
@@ -130,6 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			currentAssistant: activeAssistantId,
 			autoLaunch: autoLaunchCheckbox.checked,
 			standardWindow: standardWindowCheckbox.checked,
+			webChatAutoPaste: webChatAutoPasteCheckbox.checked,
 			theme: themeToggle.checked ? 'dark' : 'light',
 			historyCleanup: historyCleanupSelect.value,
 			prompts: finalPrompts.map(p => ({
@@ -373,6 +376,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 				});
 				apiProvidersGroup.appendChild(opt);
 			});
+		}
+
+		// Auto-paste only exists for chats that can report their answer back
+		if (webChatAutoPasteBox) {
+			const selected = webchatProviders.find(p => p.id === activeAssistantId);
+			webChatAutoPasteBox.style.display = selected && selected.webview && selected.webview.capture ? '' : 'none';
 		}
 	};
 
@@ -799,6 +808,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		autoLaunchCheckbox.checked = !!settings.autoLaunch;
 		standardWindowCheckbox.checked = !!settings.standardWindow;
+		webChatAutoPasteCheckbox.checked = !!settings.webChatAutoPaste;
 		themeToggle.checked = settings.theme !== 'light';
 		applyTheme(themeToggle.checked ? 'dark' : 'light');
 		historyCleanupSelect.value = settings.historyCleanup || 'daily';
@@ -824,6 +834,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		autoLaunchCheckbox.addEventListener('change', autoSave);
 		standardWindowCheckbox.addEventListener('change', autoSave);
+		webChatAutoPasteCheckbox.addEventListener('change', autoSave);
 		themeToggle.addEventListener('change', autoSave);
 		historyCleanupSelect.addEventListener('change', autoSave);
 

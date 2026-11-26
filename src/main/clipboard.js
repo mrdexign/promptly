@@ -1,11 +1,11 @@
-const { clipboard, BrowserWindow, screen } = require('electron');
+const { clipboard, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const util = require('util');
 const { exec } = require('child_process');
 const execAsync = util.promisify(exec);
 const { addHistoryItem } = require('./history');
-const { toggleWindow } = require('./window');
-const { isWebChat } = require('./providers-config');
+const { toggleWindow, createWindow } = require('./window');
+const { isWebChat, getProvider } = require('./providers-config');
 
 const ROOT = path.join(__dirname, '..', '..');
 
@@ -13,32 +13,59 @@ const ROOT = path.join(__dirname, '..', '..');
 
 let loadingWindow = null;
 
+const AUTO_PASTE_DIRECTIVE =
+	'\n\nReply with only the final result. Do not add explanations, notes, greetings, introductions, or markdown formatting.';
+
+const webChatRequests = new Map();
+let activeWebChatRequest = null;
+
+ipcMain.on('web-chat-result', (_, { requestId, text }) => {
+	const request = webChatRequests.get(requestId);
+	if (!request) return;
+	webChatRequests.delete(requestId);
+	clearTimeout(request.timer);
+	request.resolve(text || null);
+});
+
+const requestWebChatText = (state, text, requestId) => new Promise(resolve => {
+	const previous = webChatRequests.get(activeWebChatRequest);
+	if (previous) {
+		clearTimeout(previous.timer);
+		webChatRequests.delete(activeWebChatRequest);
+		previous.resolve(null);
+	}
+	activeWebChatRequest = requestId;
+
+	const timer = setTimeout(() => {
+		webChatRequests.delete(requestId);
+		resolve(null);
+	}, 125000);
+	webChatRequests.set(requestId, { resolve, timer });
+
+	const send = () => state.win.webContents.send('ask-ai', { text, submit: true, capture: true, requestId });
+	if (state.win.webContents.isLoading()) state.win.webContents.once('did-finish-load', send);
+	else send();
+});
+
 const showLoadingIndicator = (theme = 'dark', cursorPoint = null, modelName = '', promptTitle = '') => {
     if (loadingWindow && !loadingWindow.isDestroyed()) {
         loadingWindow.focus();
         return;
     }
 
-    // Use provided cursor position or get current position
+    // Use the display under the cursor, pinned to the top center of its work area
     const point = cursorPoint || screen.getCursorScreenPoint();
-    const display = screen.getDisplayNearestPoint(point);
-    const { width: workWidth, height: workHeight } = display.workAreaSize;
-    const displayBounds = display.bounds;
-    const workArea = display.workArea;
-    
-    // Calculate position relative to work area
-    let posX = point.x - displayBounds.x - 90; // Center horizontally
-    let posY = point.y - displayBounds.y + 25; // Show below cursor
-    
-    // Ensure within work area bounds
-    posX = Math.max(workArea.x + 10, Math.min(posX, workArea.x + workWidth - 210));
-    posY = Math.max(workArea.y + 10, Math.min(posY, workArea.y + workHeight - 42));
-    
+    const { workArea } = screen.getDisplayNearestPoint(point);
+    const width = 248;
+    const height = 72;
+    const x = Math.round(workArea.x + (workArea.width - width) / 2);
+    const y = workArea.y + 12;
+
     loadingWindow = new BrowserWindow({
-        width: 200,
-        height: 32,
-        x: displayBounds.x + posX,
-        y: displayBounds.y + posY,
+        width,
+        height,
+        x,
+        y,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
@@ -175,14 +202,42 @@ const askAI = async (state, promptPrefix, autoSubmit = true, promptTitle = '') =
 				clipboard.writeText(oldClipboard);
 			}
 		} else {
-			// Web chat mode: Show window and send to web chat
-			toggleWindow(state, true);
-			clipboard.writeText(fullPrompt);
-			addHistoryItem(state, fullPrompt);
+			const capture = getProvider(state.currentAssistant)?.webview?.capture;
+			if (state.appSettings.webChatAutoPaste && capture) {
+				// background web chat: answer comes back without showing the page
+				const theme = state.appSettings.theme || 'dark';
+				showLoadingIndicator(theme, cursorPosition, state.currentAssistant, promptTitle);
+				if (!state.win) createWindow(state);
 
-			if (state.win) {
-				state.win.webContents.focus();
-				state.win.webContents.send('ask-ai', { text: fullPrompt, submit: autoSubmit });
+				const requestId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+				const answer = await requestWebChatText(state, `${fullPrompt}${AUTO_PASTE_DIRECTIVE}`, requestId);
+				if (activeWebChatRequest !== requestId) return;
+				hideLoadingIndicator();
+
+				if (answer) {
+					addHistoryItem(state, fullPrompt, answer);
+					clipboard.writeText(answer);
+					await new Promise(r => setTimeout(r, 100));
+					try {
+						await execAsync(`powershell -command "$w = New-Object -ComObject wscript.shell; $w.SendKeys('^{v}')"`);
+					} catch (err) {
+						console.error('Failed to paste response back to target application:', err);
+					}
+				} else {
+					addHistoryItem(state, fullPrompt);
+					clipboard.writeText(oldClipboard);
+					if (state.win) toggleWindow(state, true);
+				}
+			} else {
+				// Web chat mode: Show window and send to web chat
+				toggleWindow(state, true);
+				clipboard.writeText(fullPrompt);
+				addHistoryItem(state, fullPrompt);
+
+				if (state.win) {
+					state.win.webContents.focus();
+					state.win.webContents.send('ask-ai', { text: fullPrompt, submit: autoSubmit });
+				}
 			}
 		}
 	} catch (err) {
