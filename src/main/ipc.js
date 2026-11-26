@@ -431,7 +431,8 @@ const setupAutoReload = () => {
 				if (watchTimeout) clearTimeout(watchTimeout);
 				watchTimeout = setTimeout(() => {
 					console.log(`Auto Reload: ${normalizedFile} changed`);
-					if (normalizedFile === 'src/main/index.js') {
+					// main-process code is already loaded, so only a relaunch applies it
+					if (normalizedFile.startsWith('src/main/')) {
 						app.relaunch();
 						app.exit(0);
 					} else {

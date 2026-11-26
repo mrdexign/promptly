@@ -6,6 +6,8 @@ const AutoLaunch = require('auto-launch');
 
 if (require('electron-squirrel-startup')) app?.quit();
 
+// Dev-only watcher (ipc.js) relaunches on any src/main change, so main edits apply without a manual restart.
+
 if (!app.isPackaged) app.setPath('userData', path.join(app.getPath('appData'), 'promptly-dev'));
 
 const ROOT = path.join(__dirname, '..', '..');
